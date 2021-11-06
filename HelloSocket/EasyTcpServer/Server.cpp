@@ -8,7 +8,11 @@
 #include <stdlib.h>
 /*为了可以在其他平台也可以使用 右键项目属性 选择链接器 附加依赖项 将ws2_32.lib 添加进去就行 这样就不需要 下面这些 */
 #pragma  comment(lib,"ws2_32.lib")
-
+struct DataPackage
+{
+	int age;
+	char name[32];
+};
 int main()
 {
 	/*启动socket网络环境 2.x环境*/
@@ -52,7 +56,7 @@ int main()
 	{
 		printf("ERROR,等待接受客户端连接失败...\n");
 	}
-	printf("新客户端加入：socket=%d IP=%s", (int)_clientSocket, inet_ntoa(addCli.sin_addr));
+	printf("新客户端加入：socket=%d IP=%s\n", (int)_clientSocket, inet_ntoa(addCli.sin_addr));
 	char cmBuf[128] = {};
 	while (1)
 	{
@@ -65,27 +69,16 @@ int main()
 		}
 		printf("收到命令:%s\n", cmBuf);
 		//6.处理请求
-		if (strcmp(cmBuf,"getAge")==0)
+		if (strcmp(cmBuf,"getInfo")==0)
 		{
-			//8.想客户端发送一条数据
-			char msgBuf[128] = "我18岁";
-			send(_clientSocket, msgBuf, strlen(msgBuf) + 1, 0);
+			//7.想客户端发送一条数据
+			struct DataPackage dp = { 80,"小强" };
+			send(_clientSocket, (const char *)&dp, sizeof(DataPackage), 0);
 
 		}
-		else if(strcmp(cmBuf,"getName")==0)
-		{
-			//8.想客户端发送一条数据
-			char msgBuf[128] = "我叫小强";
-			send(_clientSocket, msgBuf, strlen(msgBuf) + 1, 0);
-		}
-		else
-		{
-			//8.想客户端发送一条数据
-			char msgBuf[128] = "你发的是什么鬼";
-			send(_clientSocket, msgBuf, strlen(msgBuf) + 1, 0);
-		}
+	
 	}
-	//7 关闭套接字
+	//8 关闭套接字
 	closesocket(sock);
 	WSACleanup();
 	getchar();

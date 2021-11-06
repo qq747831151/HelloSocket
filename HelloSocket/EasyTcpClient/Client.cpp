@@ -7,6 +7,11 @@
 
 /*为了可以在其他平台也可以使用 右键项目属性 选择链接器 附加依赖项 将ws2_32.lib 添加进去就行 这样就不需要 下面这些 */
 #pragma  comment(lib,"ws2_32.lib")
+struct DataPackage
+{
+	int age;
+	char name[32];
+};
 
 int main()
 {
@@ -21,11 +26,11 @@ int main()
 	SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (sock==INVALID_SOCKET)
 	{
-		printf("ERROR,建立套接字失败");
+		printf("ERROR,建立套接字失败\n");
 	}
 	else
 	{
-		printf("TRUE,建立套接字成功");
+		printf("TRUE,建立套接字成功\n");
 	}
 	//2.连接服务器 connect
 	sockaddr_in _sin;
@@ -35,11 +40,11 @@ int main()
 	int ret=connect(sock, (struct sockaddr*)&_sin, sizeof(_sin));
 	if (ret == INVALID_SOCKET)
 	{
-		printf("ERROR,连接服务器connect失败........");
+		printf("ERROR,连接服务器connect失败........\n");
 	}
 	else
 	{
-		printf("TRUE,建连接服务器connect成功.......");
+		printf("TRUE,建连接服务器connect成功.......\n");
 	}
 	while (true)
 	{
@@ -63,7 +68,8 @@ int main()
 		printf("%d\n", nlen);
 		if (nlen>0)
 		{
-			printf("接收到的数据为%s\n", msgBuf);
+			struct DataPackage* dp = (DataPackage*)msgBuf;
+			printf("接收到的数据:年龄=%d 姓名=%s\n", dp->age,dp->name);
 		}
 	}
 	//7.关闭套接字
