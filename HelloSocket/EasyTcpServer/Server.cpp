@@ -12,7 +12,9 @@
 enum CMD
 {
 	CMD_LOGIN,
+	CMD_LOGINRESULT,
 	CMD_LOGINOUT,
+	CMD_LOGINOUTRESULT,
 	CMD_ERROR,
 
 };
@@ -23,33 +25,47 @@ struct DataHeader
 	short dataLength;//数据长度
 };
 //登录
-struct Login
+struct Login :DataHeader
 {
+	Login()
+	{
+		dataLength = sizeof(Login);
+		cmd = CMD_LOGIN;
+	}
 	char userName[32];
 	char passWord[32];
 };
 //登录结果
-struct LoginResult
+struct LoginResult :DataHeader
 {
-	int result;
+	LoginResult()
+	{
+		cmd = CMD_LOGINRESULT;
+		dataLength = sizeof(LoginResult);
+	}
+	int result=1;
 };
 //登出
-struct LoginOut
+struct LoginOut :DataHeader
 {
+	LoginOut()
+	{
+		cmd = CMD_LOGINOUT;
+		dataLength = sizeof(LoginOut);
+
+	}
 	char userName[32];
 
 };
 //登录结果
-struct LoginOutResult
+struct LoginOutResult :DataHeader
 {
-	int result;
-};
-
-
-struct DataPackage
-{
-	int age;
-	char name[32];
+	LoginOutResult()
+	{
+		cmd = CMD_LOGINOUTRESULT;
+		dataLength = sizeof(LoginOutResult);
+	}
+	int result=1;
 };
 int main()
 {
@@ -106,16 +122,17 @@ int main()
 			printf("客户端退出,任务结束");
 			break;
 		}
-		printf("收到命令:%d 数据长度%d\n", header.cmd,header.dataLength);
+		//printf("收到命令:%d 数据长度%d\n", header.cmd,header.dataLength);
 		//6.处理请求
 		switch (header.cmd)
 		{
 		case CMD_LOGIN:
 		{
 			Login login;
-			recv(_clientSocket, (char*)&login, sizeof(login), 0);
+			recv(_clientSocket, (char*)&login+sizeof(DataHeader), sizeof(login)-sizeof(DataHeader), 0);
+			printf("收到的命令:%d 数据长度%d userName:%s password:%s\n", login.cmd, login.dataLength, login.userName, login.passWord);
 			//忽略 判断用户名密码是否正确
-			LoginResult loginresult = { 1 };
+			LoginResult loginresult;
 			send(_clientSocket, (char*)&header, sizeof(DataHeader), 0);
 			send(_clientSocket, (char*)&loginresult, sizeof(LoginResult), 0);
 		}
@@ -123,10 +140,10 @@ int main()
 		case  CMD_LOGINOUT:
 		{
 			LoginOut loginout;
-			recv(_clientSocket, (char*)&loginout, sizeof(loginout), 0);
+			recv(_clientSocket, (char*)&loginout + sizeof(DataHeader), sizeof(loginout) - sizeof(DataHeader), 0);
+			printf("收到的命令:%d 数据长度%d userName:%s\n", loginout.cmd, loginout.dataLength, loginout.userName);
 			//忽略 判断用户名密码是否正确
-			LoginOutResult loginOutresult = { 1 };
-			send(_clientSocket, (char*)&header, sizeof(DataHeader), 0);
+			LoginOutResult loginOutresult;
 			send(_clientSocket, (char*)&loginOutresult, sizeof(LoginOutResult), 0);
 		}
 			break;
