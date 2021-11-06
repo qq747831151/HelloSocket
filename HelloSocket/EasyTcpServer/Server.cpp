@@ -8,6 +8,44 @@
 #include <stdlib.h>
 /*为了可以在其他平台也可以使用 右键项目属性 选择链接器 附加依赖项 将ws2_32.lib 添加进去就行 这样就不需要 下面这些 */
 #pragma  comment(lib,"ws2_32.lib")
+
+enum CMD
+{
+	CMD_LOGIN,
+	CMD_LOGINOUT,
+	CMD_ERROR,
+
+};
+//消息头
+struct DataHeader
+{
+	short cmd;//命令
+	short dataLength;//数据长度
+};
+//登录
+struct Login
+{
+	char userName[32];
+	char passWord[32];
+};
+//登录结果
+struct LoginResult
+{
+	int result;
+};
+//登出
+struct LoginOut
+{
+	char userName[32];
+
+};
+//登录结果
+struct LoginOutResult
+{
+	int result;
+};
+
+
 struct DataPackage
 {
 	int age;
@@ -57,25 +95,48 @@ int main()
 		printf("ERROR,等待接受客户端连接失败...\n");
 	}
 	printf("新客户端加入：socket=%d IP=%s\n", (int)_clientSocket, inet_ntoa(addCli.sin_addr));
-	char cmBuf[128] = {};
+//	char cmBuf[128] = {};
 	while (1)
 	{
+		DataHeader header;
 		//5.接受客户端请求数据
-		int nlen = recv(_clientSocket, cmBuf, sizeof(cmBuf), 0);//返回值是接收的长度
+		int nlen = recv(_clientSocket, (char*)&header, sizeof(DataHeader), 0);//返回值是接收的长度
 		if (nlen<=0)
 		{
 			printf("客户端退出,任务结束");
 			break;
 		}
-		printf("收到命令:%s\n", cmBuf);
+		printf("收到命令:%d 数据长度%d\n", header.cmd,header.dataLength);
 		//6.处理请求
-		if (strcmp(cmBuf,"getInfo")==0)
+		switch (header.cmd)
 		{
-			//7.想客户端发送一条数据
-			struct DataPackage dp = { 80,"小强" };
-			send(_clientSocket, (const char *)&dp, sizeof(DataPackage), 0);
-
+		case CMD_LOGIN:
+		{
+			Login login;
+			recv(_clientSocket, (char*)&login, sizeof(login), 0);
+			//忽略 判断用户名密码是否正确
+			LoginResult loginresult = { 1 };
+			send(_clientSocket, (char*)&header, sizeof(DataHeader), 0);
+			send(_clientSocket, (char*)&loginresult, sizeof(LoginResult), 0);
 		}
+			break;
+		case  CMD_LOGINOUT:
+		{
+			LoginOut loginout;
+			recv(_clientSocket, (char*)&loginout, sizeof(loginout), 0);
+			//忽略 判断用户名密码是否正确
+			LoginOutResult loginOutresult = { 1 };
+			send(_clientSocket, (char*)&header, sizeof(DataHeader), 0);
+			send(_clientSocket, (char*)&loginOutresult, sizeof(LoginOutResult), 0);
+		}
+			break;
+		default:
+			header.cmd = CMD_ERROR;
+			header.dataLength = 0;
+			send(_clientSocket, (char*)&header, sizeof(DataHeader), 0);
+			break;
+		}
+	
 	
 	}
 	//8 关闭套接字

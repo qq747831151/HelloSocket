@@ -7,11 +7,42 @@
 
 /*为了可以在其他平台也可以使用 右键项目属性 选择链接器 附加依赖项 将ws2_32.lib 添加进去就行 这样就不需要 下面这些 */
 #pragma  comment(lib,"ws2_32.lib")
-struct DataPackage
+enum CMD
 {
-	int age;
-	char name[32];
+	CMD_LOGIN,
+	CMD_LOGINOUT,
+	CMD_ERROR,
+
 };
+//消息头
+struct DataHeader
+{
+	short cmd;//命令
+	short dataLength;//数据长度
+};
+//登录
+struct Login
+{
+	char userName[32];
+	char passWord[32];
+};
+//登录结果
+struct LoginResult
+{
+	int result;
+};
+//登出
+struct LoginOut
+{
+	char userName[32];
+
+};
+//登录结果
+struct LoginOutResult
+{
+	int result;
+};
+
 
 int main()
 {
@@ -57,19 +88,40 @@ int main()
 			printf("收到exit命令,任务结束");
 			break;
 		}
+		else if(0==strcmp(recvBuf,"login"))
+		{
+			Login login;
+			strcpy(login.userName, "sfl");
+			strcpy(login.passWord, "123456987.");
+			DataHeader dh = { CMD_LOGIN,sizeof(login) };
+			//5.向服务器发送请求
+			send(sock, (const char*)&dh, sizeof(DataHeader), 0);
+			send(sock, (const char*)&login, sizeof(Login), 0);
+			//6.接收服务端返回的数据
+			DataHeader retHeader;
+			LoginResult loginRet;
+			recv(sock, (char*)&retHeader, sizeof(retHeader), 0);
+			recv(sock, (char*)&loginRet, sizeof(loginRet), 0);
+			printf("LoginResult=%d\n", loginRet.result);
+		}
+		else if (0 == strcmp(recvBuf, "loginout"))
+		{
+			LoginOut loginout;
+			strcpy(loginout.userName, "sfl");
+			DataHeader dh = { CMD_LOGINOUT,sizeof(loginout) };
+			//5.向服务器发送请求
+			send(sock, (const char*)&dh, sizeof(DataHeader), 0);
+			send(sock, (const char*)&loginout, sizeof(LoginOut), 0);
+			//6.接收服务端返回的数据
+			DataHeader retHeader;
+			LoginOutResult loginOutRet;
+			recv(sock, (char*)&retHeader, sizeof(retHeader), 0);
+			recv(sock, (char*)&loginOutRet, sizeof(loginOutRet), 0);
+			printf("LoginOutResult=%d\n", loginOutRet.result);
+		}
 		else
 		{
-			//5.向服务器发送请求
-			send(sock, recvBuf, strlen(recvBuf) + 1, 0);
-		}
-		//6.接收服务器信息
-		char msgBuf[128] = "";
-		int nlen = recv(sock, msgBuf, sizeof(msgBuf), 0);
-		printf("%d\n", nlen);
-		if (nlen>0)
-		{
-			struct DataPackage* dp = (DataPackage*)msgBuf;
-			printf("接收到的数据:年龄=%d 姓名=%s\n", dp->age,dp->name);
+			printf("收到不支持的命令,请重新输入");
 		}
 	}
 	//7.关闭套接字
