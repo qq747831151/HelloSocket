@@ -17,6 +17,7 @@ enum CMD
 	CMD_LOGINOUT,
 	CMD_LOGINOUTRESULT,
 	CMD_ERROR,
+	CMD_NEW_USER_JOIN,
 
 };
 //消息头
@@ -58,7 +59,7 @@ struct LoginOut :DataHeader
 	char userName[32];
 
 };
-//登录结果
+//登出结果
 struct LoginOutResult :DataHeader
 {
 	LoginOutResult()
@@ -67,6 +68,17 @@ struct LoginOutResult :DataHeader
 		dataLength = sizeof(LoginOutResult);
 	}
 	int result=1;
+};
+//新用户加入
+struct LoginNewUser :DataHeader
+{
+	LoginNewUser()
+	{
+		cmd = CMD_NEW_USER_JOIN;
+		dataLength = sizeof(LoginNewUser);
+		sock = 0;
+	}
+	int sock;
 };
 std::vector<SOCKET> g_clients;
 int Processor(SOCKET clientSock)
@@ -79,7 +91,7 @@ int Processor(SOCKET clientSock)
 	DataHeader* header = (DataHeader*)szRecv;
 	if (nlen <= 0)
 	{
-		printf("客户端退出,任务结束");
+		printf("客户端<socket=%d>退出,任务结束",clientSock);
 		return -1;
 	}
 	printf("收到命令:%d 数据长度%d\n", header->cmd, header->dataLength);
@@ -146,16 +158,6 @@ int main()
 	{
 		printf("TURE,监听网络端口成功.....\n");
 	}
-	//4.等待接受客户端连接
-	sockaddr_in addCli = {};
-	int nlen = sizeof(addCli);
-	SOCKET _clientSocket = INVALID_SOCKET;//无效网址
-	_clientSocket = accept(sock, ( sockaddr*)&addCli, &nlen);
-	if (_clientSocket == INVALID_SOCKET)
-	{
-		printf("ERROR,等待接受客户端连接失败...\n");
-	}
-	printf("新客户端加入：socket=%d IP=%s\n", (int)_clientSocket, inet_ntoa(addCli.sin_addr));
 //	char cmBuf[128] = {};
 	while (1)
 	{
@@ -200,6 +202,12 @@ int main()
 			if (_cSock==INVALID_SOCKET)
 			{
 				printf("等待连接客户端失败......\n");
+			}
+			//如果有新客户端加入 就向其他现有的客户端发送
+			for (int i = g_clients.size()-1; i >= 0; i--)
+			{
+				LoginNewUser newuser;
+				send(g_clients[i],  (const char*)&newuser, sizeof(LoginNewUser), 0);
 			}
 			printf("新客户端加入：socket=%d IP=%s\n", (int)_cSock, inet_ntoa(addCli.sin_addr));
 			g_clients.push_back(_cSock);
