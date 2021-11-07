@@ -114,43 +114,44 @@ int main()
 //	char cmBuf[128] = {};
 	while (1)
 	{
-		DataHeader header;
+		//缓冲区
+		char szRecv[1024] = {};
 		//5.接受客户端请求数据
-		int nlen = recv(_clientSocket, (char*)&header, sizeof(DataHeader), 0);//返回值是接收的长度
+		//数据存到szRecv中     第三个参数是可接收数据的最大长度
+		int nlen = recv(_clientSocket, szRecv, sizeof(DataHeader), 0);//返回值是接收的长度
+		DataHeader* header = (DataHeader*)szRecv;
 		if (nlen<=0)
 		{
 			printf("客户端退出,任务结束");
 			break;
 		}
-		//printf("收到命令:%d 数据长度%d\n", header.cmd,header.dataLength);
+		printf("收到命令:%d 数据长度%d\n", header->cmd,header->dataLength);
 		//6.处理请求
-		switch (header.cmd)
+		switch (header->cmd)
 		{
 		case CMD_LOGIN:
 		{
-			Login login;
-			recv(_clientSocket, (char*)&login+sizeof(DataHeader), sizeof(login)-sizeof(DataHeader), 0);
-			printf("收到的命令:%d 数据长度%d userName:%s password:%s\n", login.cmd, login.dataLength, login.userName, login.passWord);
+			recv(_clientSocket, szRecv+sizeof(DataHeader), header->dataLength - sizeof(DataHeader), 0);
+			Login* login = (Login*)szRecv;
+			printf("收到的命令:%d 数据长度%d userName:%s password:%s\n", login->cmd, login->dataLength, login->userName, login->passWord);
 			//忽略 判断用户名密码是否正确
 			LoginResult loginresult;
-			send(_clientSocket, (char*)&header, sizeof(DataHeader), 0);
 			send(_clientSocket, (char*)&loginresult, sizeof(LoginResult), 0);
 		}
 			break;
 		case  CMD_LOGINOUT:
 		{
-			LoginOut loginout;
-			recv(_clientSocket, (char*)&loginout + sizeof(DataHeader), sizeof(loginout) - sizeof(DataHeader), 0);
-			printf("收到的命令:%d 数据长度%d userName:%s\n", loginout.cmd, loginout.dataLength, loginout.userName);
+			recv(_clientSocket, szRecv + sizeof(DataHeader), header->dataLength - sizeof(DataHeader), 0);
+			LoginOut *loginout=(LoginOut*)szRecv;
+			printf("收到的命令:%d 数据长度%d userName:%s\n", loginout->cmd, loginout->dataLength, loginout->userName);
 			//忽略 判断用户名密码是否正确
 			LoginOutResult loginOutresult;
 			send(_clientSocket, (char*)&loginOutresult, sizeof(LoginOutResult), 0);
 		}
 			break;
 		default:
-			header.cmd = CMD_ERROR;
-			header.dataLength = 0;
-			send(_clientSocket, (char*)&header, sizeof(DataHeader), 0);
+			DataHeader dp = { CMD_ERROR,0 };
+			send(_clientSocket, (char*)&dp, sizeof(DataHeader), 0);
 			break;
 		}
 	
