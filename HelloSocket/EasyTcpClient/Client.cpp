@@ -1,8 +1,24 @@
 #define WIN32_LEAN_AND_MEAN
 
 #define _WINSOCK_DEPRECATED_NO_WARNINGS //影响inet_addr
+#ifdef _WIN32
+
 #include <windows.h>
 #include <WINSock2.h>
+
+#else
+
+#include<unistd.h> //uni std
+#include<arpa/inet.h>
+#include<string.h>
+#include<sys/select.h>
+#include<pthread.h>
+#endif
+
+#define  SOCKET int
+#define INVALID_SOCKET  (SOCKET)(~0)
+#define SOCKET_ERROR  (-1)
+
 #include <stdio.h>
 #include <thread>
 
@@ -86,7 +102,7 @@ int Processor(SOCKET clientSock)
 
 	//5.接受服务端发送来的数据
 	//数据存到szRecv中     第三个参数是可接收数据的最大长度
-	int nlen = recv(clientSock, szRecv, sizeof(DataHeader), 0);//返回值是接收的长度
+	int nlen = (int)recv(clientSock, szRecv, sizeof(DataHeader), 0);//返回值是接收的长度  MAC修改的地方
 	DataHeader* header = (DataHeader*)szRecv;
 	if (nlen <= 0)
 	{
@@ -117,6 +133,7 @@ int Processor(SOCKET clientSock)
 	}
 	break;
 	}
+	return 1;
 }
 bool g_bExit = true;//线程退出
 void cmdThread(SOCKET sock)
@@ -152,10 +169,13 @@ void cmdThread(SOCKET sock)
 }
 int main()
 {
+#ifdef _WIN32
 	/*启动socket网络环境 2.x环境*/
 	WORD ver = MAKEWORD(2, 2);
 	WSADATA dat;
 	WSAStartup(ver, &dat);
+#endif
+	
 
 	/*编写*/
 	//--用Socket API建立简易的TCP客户端
@@ -173,7 +193,12 @@ int main()
 	sockaddr_in _sin;
 	_sin.sin_family = AF_INET;
 	_sin.sin_port = htons(4567);
-	_sin.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
+#ifdef _WIN32
+	_sin.sin_addr.S_un.S_addr = inet_addr("192.168.17.1");//这个是连接服务端的IP地址
+#else
+	inet_pton(AF_INET, "192.168.17.1", &_sin.sin_addr.s_addr);
+#endif
+	
 	int ret=connect(sock, (struct sockaddr*)&_sin, sizeof(_sin));
 	if (ret == INVALID_SOCKET)
 	{
@@ -212,9 +237,14 @@ int main()
 		}
 	
 	}
+#ifdef _WIN32
 	//7.关闭套接字
 	closesocket(sock);
 	WSACleanup();
+#else
+	close(sock);
+#endif
+
 	getchar();
 	return 0;
 }
