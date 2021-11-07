@@ -1,14 +1,29 @@
-﻿#define WIN32_LEAN_AND_MEAN//不影响 windows.h 和 WinSock2.h 前后顺序 
+﻿#ifdef _WIN32
+
+#define WIN32_LEAN_AND_MEAN//不影响 windows.h 和 WinSock2.h 前后顺序 
+#include <windows.h>
+#include <WinSock2.h>
+/*为了可以在其他平台也可以使用 右键项目属性 选择链接器 附加依赖项 将ws2_32.lib 添加进去就行 这样就不需要 下面这些 */
+#pragma  comment(lib,"ws2_32.lib")
+#else
+#include<unistd.h> //uni std
+#include<arpa/inet.h>
+#include<string.h>
+#include<sys/select.h>
+#include<pthread.h>
+
+#define SOCKET int
+#define INVALID_SOCKET  (SOCKET)(~0)
+#define SOCKET_ERROR            (-1)
+#endif
 
 #define _WINSOCK_DEPRECATED_NO_WARNINGS //这个用于 inet_ntoa   可以在右击项目属性 C/C++ 预处理里面 预处理定义添加
 
-#include <windows.h>
-#include <WinSock2.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
-/*为了可以在其他平台也可以使用 右键项目属性 选择链接器 附加依赖项 将ws2_32.lib 添加进去就行 这样就不需要 下面这些 */
-#pragma  comment(lib,"ws2_32.lib")
+
 
 enum CMD
 {
@@ -87,7 +102,7 @@ int Processor(SOCKET clientSock)
 	char szRecv[1024] = {};
 	//5.接受客户端请求数据
 	//数据存到szRecv中     第三个参数是可接收数据的最大长度
-	int nlen = recv(clientSock, szRecv, sizeof(DataHeader), 0);//返回值是接收的长度
+	int nlen = recv(clientSock, szRecv, sizeof(DataHeader), 0);//返回值是接收的长度  revcz在mac返回值是long 建议强转int
 	DataHeader* header = (DataHeader*)szRecv;
 	if (nlen <= 0)
 	{
@@ -126,10 +141,13 @@ int Processor(SOCKET clientSock)
 }
 int main()
 {
+#ifdef _WIN32
 	/*启动socket网络环境 2.x环境*/
 	WORD ver = MAKEWORD(2, 2);//版本号
 	WSADATA dat;
 	WSAStartup(ver, &dat);//动态库需要写上那个lib
+#endif
+	
 
 	//1.建立Socket API 建立简易TC服务端
 	SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -137,8 +155,14 @@ int main()
 	sockaddr_in _sin = {  };
 	_sin.sin_family = AF_INET;//ipv4
 	_sin.sin_port = htons(4567);//套字节序应该是网络字节序
+#ifdef _WIN32
 	_sin.sin_addr.S_un.S_addr = ADDR_ANY;//获取IP得操作交给内核
-	//_sin.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");如果项目只是内网使用的话可以使用127
+//_sin.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");如果项目只是内网使用的话可以使用127
+#else
+	//inet_pton(AF_INET, "192.168.17.1", &_sin.sin_addr.s_addr);
+	_sin.sin_addr.s_addr = ADDR_ANY;
+#endif
+
 	int ret = bind(sock, (struct sockaddr*)&_sin, sizeof(_sin));
 	if (ret == SOCKET_ERROR)
 	{
@@ -174,17 +198,21 @@ int main()
 		FD_SET(sock, &fdRead);
 		FD_SET(sock, &fdWrite);
 		FD_SET(sock, &fdExp);//将参数文件描述符fd对应的标志位,设置为1
-
+		SOCKET maxSock = sock;
 		for (int i = g_clients.size()-1; i >=0; i--)
 		{
 			FD_SET(g_clients[i], &fdRead);//可以放只读 另外两个也可以放
+			if (g_clients[i]>maxSock)
+			{
+				maxSock = g_clients[i];
+			}
 		}
 		struct timeval _time;
 		_time.tv_sec = 0;
 		_time.tv_usec = 0;
 		//nfds 是一个整数值 是指fd_set集合中所有的描述符socket 的范围,而不是数量,
 		//既是所有文件描述符最大值+1在windows无所谓 在linux是这样的
-		int ret = select(sock + 1, &fdRead, &fdWrite, &fdExp, &_time);
+		int ret = select(maxSock + 1, &fdRead, &fdWrite, &fdExp, &_time);
 		if (ret<0)
 		{
 			printf("客户端已退出,任务结束\n");
@@ -201,7 +229,12 @@ int main()
 			sockaddr_in addCli = {};
 			int nlen = sizeof(sockaddr_in);
 			SOCKET _cSock = INVALID_SOCKET;
+#ifdef _WIN32
 			_cSock = accept(sock, (sockaddr*)&addCli, &nlen);
+#else
+			_cSock = accept(sock, (sockaddr*)&addCli, (socklen_t*)&nlen);
+#endif
+		
 			if (_cSock==INVALID_SOCKET)
 			{
 				printf("等待连接客户端失败......\n");
@@ -219,27 +252,55 @@ int main()
 			}
 			
 		}
-		//通信,有客户端发送数据过来  在windows中 fd_read.fd_count 认为是保留发生事件的socket的数量
-		for (int i = 0; i < fdRead.fd_count; i++)
+		////通信,有客户端发送数据过来  在windows中 fd_read.fd_count 认为是保留发生事件的socket的数量  这个只能用在windows中
+		//for (int i = 0; i < fdRead.fd_count; i++)
+		//{
+		//	
+		//	if (-1==Processor(fdRead.fd_array[i]))
+		//	{
+		//		auto iter = find(g_clients.begin(), g_clients.end(), fdRead.fd_array[i]);
+		//		if (iter!=g_clients.end())
+		//		{
+		//			g_clients.erase(iter);
+		//		}
+		//	}
+		//}
+
+
+		//通信,有客户端发送数据过来
+		for (int i = g_clients.size()-1; i >= 0; i--)
 		{
-			if (-1==Processor(fdRead.fd_array[i]))
+			if (FD_ISSET(g_clients[i],&fdRead))
 			{
-				auto iter = find(g_clients.begin(), g_clients.end(), fdRead.fd_array[i]);
-				if (iter!=g_clients.end())
+				if (-1==Processor(g_clients[i]))
 				{
-					g_clients.erase(iter);
+					std::vector<SOCKET>::iterator iter = g_clients.begin() + i;;//i是删除的迭代器
+					if (iter != g_clients.end())
+					{
+						g_clients.erase(iter);//删除
+					}
 				}
 			}
 		}
 	
 	}
-	for (int i = g_clients.size()-1; i >= 0; i--)
+#ifdef _WIN32
+	for (int i = g_clients.size() - 1; i >= 0; i--)
 	{
 		closesocket(g_clients[i]);
 	}
 	//8 关闭套接字
 	closesocket(sock);
 	WSACleanup();
+#else
+	for (int i = g_clients.size() - 1; i >= 0; i--)
+	{
+		close(g_clients[i]);
+	}
+	//8 关闭套接字
+	close(sock);
+#endif
+
 	getchar();
 	return 0;
 
