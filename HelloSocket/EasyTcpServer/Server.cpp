@@ -166,9 +166,11 @@ int main()
 		fd_set fdRead;
 		fd_set fdWrite;
 		fd_set fdExp;
+		//清除集合
 		FD_ZERO(&fdRead);// fd_set 共有1024bit, 全部初始化为0
 		FD_ZERO(&fdWrite);
 		FD_ZERO(&fdExp);
+		//加入集合
 		FD_SET(sock, &fdRead);
 		FD_SET(sock, &fdWrite);
 		FD_SET(sock, &fdExp);//将参数文件描述符fd对应的标志位,设置为1
@@ -191,6 +193,7 @@ int main()
 
 		// 判断fd对应的标志位到底是0还是1, 返回值: fd对应的标志位的值, 0, 返回0, 1->返回1
 		//有新连接
+		//判断描述符(socket)是否在集合中
 		if (FD_ISSET(sock,&fdRead))
 		{
 			FD_CLR(sock, &fdRead);// 将参数文件描述符fd对应的标志位, 设置为0
@@ -203,14 +206,18 @@ int main()
 			{
 				printf("等待连接客户端失败......\n");
 			}
-			//如果有新客户端加入 就向其他现有的客户端发送
-			for (int i = g_clients.size()-1; i >= 0; i--)
+			else
 			{
-				LoginNewUser newuser;
-				send(g_clients[i],  (const char*)&newuser, sizeof(LoginNewUser), 0);
+				//如果有新客户端加入 就向其他现有的客户端发送
+				for (int i = g_clients.size() - 1; i >= 0; i--)
+				{
+					LoginNewUser newuser;
+					send(g_clients[i], (const char*)&newuser, sizeof(LoginNewUser), 0);
+				}
+				printf("新客户端加入：socket=%d IP=%s\n", (int)_cSock, inet_ntoa(addCli.sin_addr));
+				g_clients.push_back(_cSock);
 			}
-			printf("新客户端加入：socket=%d IP=%s\n", (int)_cSock, inet_ntoa(addCli.sin_addr));
-			g_clients.push_back(_cSock);
+			
 		}
 		//通信,有客户端发送数据过来  在windows中 fd_read.fd_count 认为是保留发生事件的socket的数量
 		for (int i = 0; i < fdRead.fd_count; i++)

@@ -4,6 +4,7 @@
 #include <windows.h>
 #include <WINSock2.h>
 #include <stdio.h>
+#include <thread>
 
 /*为了可以在其他平台也可以使用 右键项目属性 选择链接器 附加依赖项 将ws2_32.lib 添加进去就行 这样就不需要 下面这些 */
 #pragma  comment(lib,"ws2_32.lib")
@@ -112,9 +113,41 @@ int Processor(SOCKET clientSock)
 	{
 		recv(clientSock, szRecv + sizeof(DataHeader), header->dataLength - sizeof(DataHeader), 0);
 		LoginNewUser* loginnewUser = (LoginNewUser*)szRecv;
-		printf("收到服务器消息是 CMD_LOGINOUTRESULT 数据长度:%d\n", loginnewUser->dataLength);
+		printf("收到服务器消息是 CMD_NEW_USER_JOIN 数据长度:%d\n", loginnewUser->dataLength);
 	}
 	break;
+	}
+}
+bool g_bExit = true;//线程退出
+void cmdThread(SOCKET sock)
+{
+	while (true)
+	{
+		char szBuf[256];
+		scanf("%s", szBuf);
+		if (0 == strcmp(szBuf, "exit"))
+		{
+			printf("退出cmdThread\n");
+			g_bExit = false;
+			break;
+		}
+		else if (0 == strcmp(szBuf, "login"))
+		{
+			Login login;
+			strcpy(login.userName, "sfl");
+			strcpy(login.passWord, "123");
+			send(sock, (char*)&login, sizeof(login), 0);
+		}
+		else if (0 == strcmp(szBuf, "loginout"))
+		{
+			LoginOut loginOut;
+			strcpy(loginOut.userName, "sfl");
+			send(sock, (char*)&loginOut, sizeof(loginOut), 0);
+		}
+		else
+		{
+			printf("不支持命令");
+		}
 	}
 }
 int main()
@@ -150,7 +183,10 @@ int main()
 	{
 		printf("TRUE,建连接服务器connect成功.......\n");
 	}
-	while (true)
+	//启动线程
+	std::thread t1(cmdThread,sock);
+	t1.detach();//线程分离
+	while (g_bExit)
 	{
 
 		fd_set fdRead;
@@ -174,12 +210,7 @@ int main()
 					break;
 			}
 		}
-		//printf("空闲时间处理其他业务");
-		Login login;
-		strcpy(login.userName, "sfl");
-		strcpy(login.passWord, "123");
-		send(sock, (const char*)&login, sizeof(login), 0);
-		Sleep(1000);
+	
 	}
 	//7.关闭套接字
 	closesocket(sock);
