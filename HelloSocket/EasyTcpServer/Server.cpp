@@ -115,7 +115,7 @@ int Processor(SOCKET clientSock)
 	{
 	case CMD_LOGIN:
 	{
-		recv(clientSock, szRecv + sizeof(DataHeader), header->dataLength - sizeof(DataHeader), 0);
+		int ret=recv(clientSock, szRecv + sizeof(DataHeader), header->dataLength - sizeof(DataHeader), 0);
 		Login* login = (Login*)szRecv;
 		printf("收到的命令:%d 数据长度%d userName:%s password:%s\n", login->cmd, login->dataLength, login->userName, login->passWord);
 		//忽略 判断用户名密码是否正确
@@ -265,7 +265,6 @@ int main()
 		//		}
 		//	}
 		//}
-
 
 		//通信,有客户端发送数据过来
 		for (int i = g_clients.size()-1; i >= 0; i--)
