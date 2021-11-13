@@ -34,6 +34,7 @@ struct LoginResult :DataHeader
 		dataLength = sizeof(LoginResult);
 	}
 	int result = 1;
+	char data[1024];
 };
 //µÇ³ö
 struct LoginOut :DataHeader

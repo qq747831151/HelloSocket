@@ -3,6 +3,7 @@
 #ifdef _WIN32
 
 #define WIN32_LEAN_AND_MEAN//不影响 windows.h 和 WinSock2.h 前后顺序 
+#define _WINSOCK_DEPRECATED_NO_WARNINGS //这个用于 inet_ntoa   可以在右击项目属性 C/C++ 预处理里面 预处理定义添加
 #include <windows.h>
 #include <WinSock2.h>
 /*为了可以在其他平台也可以使用 右键项目属性 选择链接器 附加依赖项 将ws2_32.lib 添加进去就行 这样就不需要 下面这些 */
@@ -18,9 +19,6 @@
 #define INVALID_SOCKET  (SOCKET)(~0)
 #define SOCKET_ERROR            (-1)
 #endif
-
-#define _WINSOCK_DEPRECATED_NO_WARNINGS //这个用于 inet_ntoa   可以在右击项目属性 C/C++ 预处理里面 预处理定义添加
-
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -170,6 +168,7 @@ public:
 #endif
 	}
 	//处理网络消息
+	int nCount = 0;
 	bool OnRun()
 	{
 		if (IsRun())
@@ -196,7 +195,7 @@ public:
 				}
 			}
 			struct timeval _time;
-			_time.tv_sec = 0;
+			_time.tv_sec = 1;
 			_time.tv_usec = 0;
 			//nfds 是一个整数值 是指fd_set集合中所有的描述符socket 的范围,而不是数量,
 	//既是所有文件描述符最大值+1在windows无所谓 在linux是这样的
@@ -238,27 +237,29 @@ public:
 	bool IsRun() {
 		return _sock != INVALID_SOCKET;
 	}
+	//缓冲区
+	char szRecv[409600] = {};
 	//接受数据 处理粘包 拆分包
 	int RecvData(SOCKET clientSock)
 	{
-		//缓冲区
-		char szRecv[1024] = {};
 		//5.接受客户端请求数据
 		//数据存到szRecv中     第三个参数是可接收数据的最大长度
-		int nlen = recv(clientSock, szRecv, sizeof(DataHeader), 0);//返回值是接收的长度  revcz在mac返回值是long 建议强转int
-		DataHeader* header = (DataHeader*)szRecv;
+		int nlen = recv(clientSock, szRecv, 409600, 0);//返回值是接收的长度  revcz在mac返回值是long 建议强转int
 		if (nlen <= 0)
 		{
-			printf("客户端<socket=%d>退出,任务结束", clientSock);
+			printf("客户端<socket=%d>退出,任务结束\n", clientSock);
 			return -1;
 		}
-		
+		LoginResult loginresult;
+		SendData(&loginresult, clientSock);
+
+		/*DataHeader* header = (DataHeader*)szRecv;
 		recv(clientSock, szRecv + sizeof(DataHeader), header->dataLength - sizeof(DataHeader),0);
-		OnNetMsg(header,clientSock);
-		return 1;
+		OnNetMsg(header,clientSock);*/
+		return 0;
 	}
 	//响应网络消息
-	void OnNetMsg(DataHeader*header,SOCKET clientSock)
+	virtual void OnNetMsg(DataHeader*header,SOCKET clientSock)
 	{
 		switch (header->cmd)
 		{
