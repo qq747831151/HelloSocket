@@ -145,8 +145,10 @@ public:
 	bool IsRun() {
 		return _sock != INVALID_SOCKET;
 	}
+#ifndef RECV_BUFF_SIZE
 	//缓冲区区域最小单元大小 
 #define RECV_BUFF_SIZE 10240
+#endif 
 	//接收缓冲区
 	char szRecv[RECV_BUFF_SIZE] = {};
 	//第二缓冲区 消息缓冲区
@@ -204,7 +206,7 @@ public:
 		case  CMD_LOGINRESULT:
 		{
 			LoginResult* loginResult = (LoginResult*)header;
-		printf("收到服务器消息是 CMD_LOGINRESUL 数据长度:%d\n", loginResult->dataLength);
+	//	printf("收到服务器消息是 CMD_LOGINRESUL 数据长度:%d\n", loginResult->dataLength);
 		}
 		break;
 		case  CMD_LOGINOUTRESULT:
