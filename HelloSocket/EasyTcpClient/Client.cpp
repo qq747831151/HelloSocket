@@ -18,53 +18,63 @@ void cmdThread()
 		}
 	}
 }
-int main()
+const int Count = 4000;//客户端数量
+const int tCount = 4;//线程数量
+EasyTcpClient* clients[Count];
+//发送线程
+void SendThread(int id)
 {
-	const int Count = 10000;
-	EasyTcpClient* clients[Count];
-	for (int n = 0; n < Count; n++)
+	//线程ID =1~4
+	int c = (Count / tCount);
+	int begin = (id - 1) * c;
+	int end = id * c;
+	for (int i = begin; i < end; i++)
 	{
-		if (!g_bExit)
-		{
-			return 0;
-
-		}
-		clients[n] = new EasyTcpClient();
+		clients[i] = new EasyTcpClient();
 	}
-	for (int i = 0; i < Count; i++)
+	for (int i = begin; i < end; i++)
 	{
-		if (!g_bExit)
-		{
-			return 0;
-		}
 		clients[i]->InitSocket();
 		clients[i]->Connect("192.168.17.1", 4567);
-		//printf("Connect =%d\n", i);
+	}
+	Login login;
+	strcpy(login.passWord, "123");
+	strcpy(login.userName, "321");
+	while (g_bExit)
+	{
+		for (int i = begin; i < end; i++)
+		{
+
+			clients[i]->SendData(&login);
+			//clients[i]->OnRun();
+		}
+
+	}
+	for (int i = begin; i < end; i++)
+	{
+		clients[i]->Close();
+	}
+}
+int main()
+{
+	//启动发送线程
+	for (int i = 0; i < tCount; i++)
+	{
+		//启动线程
+		std::thread t1(SendThread,i+1);
+		t1.detach();//线程分离
 	}
 	
 	//启动线程
 	std::thread t1(cmdThread);
 	t1.detach();//线程分离
 
-	Login login;
-	strcpy(login.passWord, "123");
-	strcpy(login.userName,"321");
 
 	while (g_bExit)
 	{
-		
-		for (int i = 0; i < Count; i++)
-		{
-			clients[i]->SendData(&login);
-			//clients[i]->OnRun();
-		}
+		Sleep(100);
 		
 	}
-	for (int i = 0; i < Count; i++)
-	{
-		clients[i]->Close();
-	}
-	
 	getchar();
 	return 0;
 }
