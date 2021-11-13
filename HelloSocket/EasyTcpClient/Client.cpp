@@ -20,16 +20,26 @@ void cmdThread()
 }
 int main()
 {
-	const int Count = FD_SETSIZE - 1;
+	const int Count = 10000;
 	EasyTcpClient* clients[Count];
 	for (int n = 0; n < Count; n++)
 	{
-		clients[n] = new EasyTcpClient[n];
+		if (!g_bExit)
+		{
+			return 0;
+
+		}
+		clients[n] = new EasyTcpClient();
 	}
 	for (int i = 0; i < Count; i++)
 	{
+		if (!g_bExit)
+		{
+			return 0;
+		}
 		clients[i]->InitSocket();
 		clients[i]->Connect("192.168.17.1", 4567);
+		//printf("Connect =%d\n", i);
 	}
 	
 	//Æô¶¯Ïß³Ì
@@ -42,11 +52,13 @@ int main()
 
 	while (g_bExit)
 	{
+		
 		for (int i = 0; i < Count; i++)
 		{
 			clients[i]->SendData(&login);
-			clients[i]->OnRun();
+			//clients[i]->OnRun();
 		}
+		
 	}
 	for (int i = 0; i < Count; i++)
 	{

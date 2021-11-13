@@ -1,7 +1,7 @@
 #ifndef _EasyTcpServer_HPP
 #define  _EasyTcpServer_HPP
 #ifdef _WIN32
-
+#define FD_SETSIZE 4024
 #define WIN32_LEAN_AND_MEAN//不影响 windows.h 和 WinSock2.h 前后顺序 
 #define _WINSOCK_DEPRECATED_NO_WARNINGS //这个用于 inet_ntoa   可以在右击项目属性 C/C++ 预处理里面 预处理定义添加
 #include <windows.h>
@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
+#include"CELLTimestamp.hpp"
 
 #include "MessAgeHeader.hpp"
 #ifndef RECV_BUFF_SIZE
@@ -66,10 +67,13 @@ class EasyTcpServer
 private:
 	SOCKET _sock;
 	std::vector<ClientScoket*> g_clients;
+	CELLTimestamp _time;
+	int _recvCount;
 public:
 	EasyTcpServer()
 	{
 		_sock = INVALID_SOCKET;//无效地址
+		_recvCount = 0;
 	}
 	virtual ~EasyTcpServer()
 	{
@@ -256,6 +260,7 @@ public:
 			{
 				FD_CLR(_sock, &fdRead);// 将参数文件描述符fd对应的标志位, 设置为0
 				Accept();
+				return true;
 			}
 			//通信,有客户端发送数据过来
 			for (int i = (int)g_clients.size() - 1; i >= 0; i--)
@@ -329,6 +334,14 @@ public:
 	//响应网络消息
 	virtual void OnNetMsg(DataHeader*header,SOCKET clientSock)
 	{
+		_recvCount++;
+		auto t1 = _time.getElapsedSecond();
+		if (t1 >= 1.0)
+		{
+			printf("time=%lf socket<%d> RecvCount=%d\n", t1, _sock, _recvCount);
+			_recvCount = 0;
+			_time.update();
+		}
 		switch (header->cmd)
 		{
 		case CMD_LOGIN:
@@ -336,8 +349,8 @@ public:
 			Login* login = (Login*)header;
 		//	printf("收到的命令:%d 数据长度%d userName:%s password:%s\n", login->cmd, login->dataLength, login->userName, login->passWord);
 			//忽略 判断用户名密码是否正确
-			LoginResult loginresult;
-			send(clientSock, (char*)&loginresult, sizeof(LoginResult), 0);
+			//LoginResult loginresult;
+			//send(clientSock, (char*)&loginresult, sizeof(LoginResult), 0);
 		}
 		break;
 		case  CMD_LOGINOUT:
@@ -346,8 +359,8 @@ public:
 			LoginOut* loginout = (LoginOut*)header;
 		//	printf("收到的命令:%d 数据长度%d userName:%s\n", loginout->cmd, loginout->dataLength, loginout->userName);
 			//忽略 判断用户名密码是否正确
-			LoginOutResult loginOutresult;
-			send(clientSock, (char*)&loginOutresult, sizeof(LoginOutResult), 0);
+			//LoginOutResult loginOutresult;
+			//send(clientSock, (char*)&loginOutresult, sizeof(LoginOutResult), 0);
 		}
 		break;
 		default:
