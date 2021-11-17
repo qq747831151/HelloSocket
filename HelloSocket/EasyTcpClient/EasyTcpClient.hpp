@@ -66,7 +66,7 @@ public:
 		}
 		else
 		{
-			printf("TRUE,<Socket=%d>建立套接字成功\n",_sock);
+			//printf("TRUE,<Socket=%d>建立套接字成功\n",_sock);
 		}
 	}
 	int Connect(const char *ip,unsigned short port )
@@ -87,7 +87,7 @@ public:
 		}
 		else
 		{
-			printf("TRUE,建连接服务器connect成功.......\n");
+			//printf("TRUE,建连接服务器connect成功.......\n");
 		}
 		return ret;
 	}
@@ -233,12 +233,12 @@ public:
 		}
 		
 	}
-	int SendData(DataHeader*header)
+	int SendData(DataHeader*header,const int nlen)
 	{
 		if (IsRun()&&header)
 		{
 			
-			return send(_sock, (const char*)header, header->dataLength, 0);
+			return send(_sock, (const char*)header, nlen, 0);
 		}
 		return SOCKET_ERROR;
 	}
