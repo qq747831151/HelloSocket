@@ -29,7 +29,7 @@ struct Login :DataHeader
 	}
 	char userName[32];
 	char passWord[32];
-	char data[932];
+	char data[32];
 };
 //µÇÂ¼½á¹û
 struct LoginResult :DataHeader
@@ -40,7 +40,7 @@ struct LoginResult :DataHeader
 		dataLength = sizeof(LoginResult);
 	}
 	int result = 1;
-	char data[992];
+	char data[92];
 };
 //µÇ³ö
 struct LoginOut :DataHeader
