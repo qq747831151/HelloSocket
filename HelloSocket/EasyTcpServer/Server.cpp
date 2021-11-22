@@ -28,7 +28,7 @@ public:
 	virtual void OnNetLeave(ClientScoket*pClient)
 	{
 		_ClientCount--;
-		printf("client<%d> leave\n", pClient->Getsockfd());
+		//printf("client<%d> leave\n", pClient->Getsockfd());
 	}
 	/*客户端消息事件*/
 	virtual void OnNetMsg(DataHeader* header, ClientScoket *pClient)
@@ -48,8 +48,8 @@ public:
 			LoginOut* loginout = (LoginOut*)header;
 			//printf("收到命令:%d 数据长度：%d username:%s password:%s\n", loginout->cmd, loginout->dataLength, loginout->userName);
 			/*忽略 判断用户名密码是否正确*/
-			LoginOutResult loginOutresult;
-			pClient->SendData(&loginOutresult);
+		//	LoginOutResult loginOutresult;
+			//pClient->SendData(&loginOutresult);
 		}
 					  break;
 		default:
@@ -63,7 +63,7 @@ public:
 	virtual void OnNetJoin(ClientScoket* pClient)
 	{
 		_ClientCount++;
-		printf("client<%d> join\n", pClient->Getsockfd());
+		//printf("client<%d> join\n", pClient->Getsockfd());
 	}
 };
 int main()

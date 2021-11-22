@@ -122,7 +122,7 @@ public:
 			struct timeval _time;
 			_time.tv_sec = 0;
 			_time.tv_usec = 0;
-			int ret = select(_sock + 1, &fdRead, NULL, NULL, &_time);
+			int ret = select(_sock + 1, &fdRead, 0, 0, &_time);
 			if (ret < 0)
 			{
 				printf("select ÈÎÎñ½áÊø1\n");
@@ -238,12 +238,12 @@ public:
 	}
 	int SendData(DataHeader*header,const int nlen)
 	{
-		int ret = 0;
+		int ret = SOCKET_ERROR;
 		if (IsRun()&&header)
 		{
 			
 			ret=send(_sock, (const char*)header, nlen, 0);
-			if (ret==-1)
+			if (ret==SOCKET_ERROR)
 			{
 				Close();
 			}

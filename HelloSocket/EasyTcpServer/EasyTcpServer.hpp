@@ -30,14 +30,14 @@
 #include <functional>
 #include <algorithm>
 #include <atomic>
-#include"mutex"
+#include<mutex>
+#include <map>
 #ifndef RECV_BUFF_SIZE
 //缓冲区区域最小单元大小 
 #define RECV_BUFF_SIZE 10240
 #endif 
-//#define _CellServer_THREAD_COUNT 4
 
-/*存储客户端的信息*/
+/*客户端数据类型*/
 class ClientScoket
 {
 public:
@@ -100,17 +100,16 @@ private:
 	std::mutex _mutex;
 	SOCKET _sock;
 	//正式客户端队列
-	std::vector<ClientScoket*>_clients;
+	std::map<SOCKET,ClientScoket*>_clients;
 	//缓冲客户端队列
 	std::vector<ClientScoket*>_clientsBuf;
 	std::thread* _Pthread;
-	/*网络事件*/
+	/*网络事件对象*/
 	INetEvent* _pNetevt;
 public:
 	CellServer(SOCKET sock=INVALID_SOCKET)
 	{
 		_sock = sock;
-		_Pthread = nullptr;
 		_pNetevt = nullptr;
 
 	}
@@ -153,8 +152,14 @@ public:
 		return _sock != INVALID_SOCKET;
 	}
 	//处理网络消息
+	//备份客户socket fd_set
+	fd_set fdRead_bak;
+	//客户列表是否有变化
+	bool _client_change;//优化的地方
 	bool OnRun()
 	{
+		_client_change = true;
+		SOCKET maxSocket;
 		while (IsRun())
 		{
 			//缓冲区
@@ -164,9 +169,10 @@ public:
 				std::lock_guard<std::mutex> lock(_mutex);//锁住
 				for (auto pClient : _clientsBuf)
 				{
-					_clients.push_back(pClient);/*将缓冲区队列的客户端信息加到正式队列中去*/
+					_clients[pClient->Getsockfd()]=pClient;/*将缓冲区队列的客户端信息加到正式队列中去*/
 				}
 				_clientsBuf.clear();
+				_client_change = true;
 			}
 			//如果没有需要处理的客户端,就跳过
 			if (_clients.empty())
@@ -180,43 +186,86 @@ public:
 			//清除集合
 			FD_ZERO(&fdRead);// fd_set 共有1024bit, 全部初始化为0
 			//将描述符（socket）加入集合
-			SOCKET maxSock =_clients[0]->Getsockfd();
-			for (int i = (int)_clients.size() - 1; i >= 0; i--)
+			if (_client_change)
 			{
-				FD_SET(_clients[i]->Getsockfd(), &fdRead);//可以放只读 另外两个也可以放
-				if (_clients[i]->Getsockfd() > maxSock)
+				_client_change = false;
+				maxSocket = _clients.begin()->second->Getsockfd();
+				for (auto iter:_clients)
 				{
-					maxSock = _clients[i]->Getsockfd();
+					FD_SET(iter.second->Getsockfd(), &fdRead);
+					if (iter.second->Getsockfd()>maxSocket)
+					{
+						maxSocket = iter.second->Getsockfd();
+					}
 				}
+				memcpy(&fdRead_bak, &fdRead, sizeof(fd_set));
+			}
+			else
+			{
+				memcpy( &fdRead, &fdRead_bak,sizeof(fd_set));
 			}
 			///nfds 是一个整数值 是指fd_set集合中所有描述符(socket)的范围，而不是数量
 			///既是所有文件描述符最大值+1 在Windows中这个参数可以写0
-			int ret = select(maxSock + 1, &fdRead, nullptr, nullptr, nullptr);
+			struct timeval time;
+			time.tv_sec = 0;
+			time.tv_usec = 0;
+			int ret = select(maxSocket+1, &fdRead, nullptr, nullptr, &time);
 			if (ret < 0)
 			{
 				printf("select任务结束2.\n");
 				Close();
 				return false;
 			}
-			for (int i = (int)_clients.size() - 1; i >= 0; i--)
+			else if(ret==0)
 			{
-				if (FD_ISSET(_clients[i]->Getsockfd(),&fdRead))
+				continue;
+			}
+#ifdef _WIN32
+			for (int i = 0; i < fdRead.fd_count; i++)
+			{
+				auto iter = _clients.find(fdRead.fd_array[i]);
+				if (iter!=_clients.end())
 				{
-					if (-1 == RecvData(_clients[i]))
+					if (-1==RecvData(iter->second))
 					{
-						std::vector<ClientScoket*>::iterator iter = _clients.begin() + i;;//i是删除的迭代器
-						if (iter != _clients.end())
+						if (_pNetevt)
 						{
-							if (_pNetevt)
-							{
-								_pNetevt->OnNetLeave(_clients[i]);
-							}
-							delete _clients[i];
-							_clients.erase(iter);//删除
+							_pNetevt->OnNetLeave(iter->second);
 						}
+						_client_change = true;
+						_clients.erase(iter->first);
+					}
+				}
+				else
+				{
+					printf("error:iter != _clients.end()");
+				}
+			}
+#else
+			std::vector<ClientScoket*> temp;
+			// 通信, 有客户端发送数据过来
+			for (auto iter : _clients)
+			{
+				if (FD_ISSET(iter.second->Getsockfd(), &fdRead))
+				{
+					if (-1 == RecvData(iter->second))
+					{
+
+						if (_pNetevt)
+							_pNetevt->OnNetLeave(iter->second);
+						_client_change = true;
+						temp.push_back(iter->second);
+
 					}
 				}
 			}
+			for (auto pClient : temp)
+			{
+				_clients.erase(pClient->Getsockfd());
+				delete pClient;
+			}
+#endif
+		
 		}
 	}
 	//缓冲区
@@ -296,7 +345,6 @@ class EasyTcpServer:public INetEvent
 {
 private:
 	SOCKET _sock;
-	//std::vector<ClientScoket*> g_clients;
 	/*消息处理对象,内部会创建线程*/
 	std::vector<CellServer*>_cellServer;
 	/*每秒消息计时*/
@@ -328,6 +376,7 @@ public:
 		if (_sock!=INVALID_SOCKET)
 		{
 			printf("<Socket=%d>关闭之前的旧链接\n", _sock);
+			Close();
 		}
 	//1.建立Socket API 建立简易TC服务端
 		_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -417,14 +466,7 @@ public:
 		else
 		{
 			//printf("TURE,等待接收客户端<socket=%d>连接成功\n",_cSock);
-
 			//inet_ntoa(addCli.sin_addr)//这个保留获取IP地址
-			
-			//如果有新客户端加入,就向其他现有的客户端发送信息
-			//LoginNewUser newUser;
-			//SendData2All(&newUser);
-			//printf("新客户端加入:socket=%d IP=%s\n", (int)_cSock, inet_ntoa(addCli.sin_addr));
-
 			/*将新的客户端分配给客户端数量最少的cellServer*/
 			addClienttoServer(new ClientScoket(_cSock));
 		}
@@ -432,6 +474,7 @@ public:
 	}
 	void addClienttoServer(ClientScoket* pClient)
 	{
+		//查找客户数量最少的CellServer消息处理对象
 		auto pMinServer = _cellServer[0];
 		//查找最小的客户数量最少的CellServer消息线程
 		for (auto pClellServer:_cellServer)
@@ -514,7 +557,7 @@ public:
 	bool IsRun() {
 		return _sock != INVALID_SOCKET;
 	}
-	//响应网络消息 /*计算并输出每秒收到的网络消息*/
+	 /*计算并输出每秒收到的网络消息*/
 	virtual void time4msg()
 	{
 		
