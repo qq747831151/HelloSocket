@@ -153,7 +153,7 @@ public:
 #define RECV_BUFF_SIZE 10240
 #endif 
 	//接收缓冲区
-	char szRecv[RECV_BUFF_SIZE] = {};
+	//char szRecv[RECV_BUFF_SIZE] = {};
 	//第二缓冲区 消息缓冲区
 	char szMsg[RECV_BUFF_SIZE * 5] = {};
 	//消息缓冲的数据尾部位置
@@ -162,15 +162,16 @@ public:
 	int RecvData(SOCKET clientSock)
 	{
 		//5.接受服务端发送来的数据
+		char* szRecv = szMsg + lastPos;
 		//数据存到szRecv中     第三个参数是可接收数据的最大长度
-		int nlen = (int)recv(clientSock, szRecv, RECV_BUFF_SIZE, 0);//返回值是接收的长度  MAC修改的地方
+		int nlen = (int)recv(clientSock, szRecv, (RECV_BUFF_SIZE*5)-lastPos, 0);//返回值是接收的长度  MAC修改的地方
 		if (nlen <= 0)
 		{
 			printf("客户端<socket=%d>退出,任务结束\n", clientSock);
 			return -1;
 		}
 		//将收取到的数据拷贝到消息缓冲区
-		memcpy(szMsg+lastPos, szRecv, nlen);
+		//memcpy(szMsg+lastPos, szRecv, nlen);
 		//消息缓冲区的数据尾部位置后移
 		lastPos +=nlen;
 
@@ -248,7 +249,7 @@ public:
 				Close();
 			}
 		}
-		return SOCKET_ERROR;
+		return ret;
 	}
 private:
 

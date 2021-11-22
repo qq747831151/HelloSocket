@@ -40,8 +40,8 @@ public:
 			Login* login = (Login*)header;
 			//printf("收到命令:%d 数据长度：%d username:%s password:%s\n", login->cmd, login->dataLength, login->userName, login->passWord);
 			/*忽略 判断用户名密码是否正确*/
-			LoginResult loginresult;
-			pClient->SendData(&loginresult);
+		//	LoginResult loginresult;
+			//pClient->SendData(&loginresult);
 		}
 			break;
 		case CMD_LOGINOUT: {
@@ -64,6 +64,10 @@ public:
 	{
 		_ClientCount++;
 		//printf("client<%d> join\n", pClient->Getsockfd());
+	}
+	virtual void OnNetRecv(ClientScoket* pClient)
+	{
+		_recvCount++;
 	}
 };
 int main()

@@ -151,6 +151,7 @@
     <ClCompile Include="EasyTcpClient.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CELLTimestamp.hpp" />
     <ClInclude Include="MessAgeHeader.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

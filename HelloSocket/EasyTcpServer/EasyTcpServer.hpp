@@ -85,6 +85,8 @@ public:
 	virtual void OnNetMsg(DataHeader* header, ClientScoket*pClient) = 0;//纯虚函数
 	/*客户端加入事件*/
 	virtual void OnNetJoin(ClientScoket* pClient) = 0;
+	/*Recv事件*/
+	virtual void OnNetRecv(ClientScoket* pClient) = 0;//虚函数
 
 
 private:
@@ -269,20 +271,23 @@ public:
 		}
 	}
 	//缓冲区
-	char szRecv[RECV_BUFF_SIZE] = {};
+	//char szRecv[RECV_BUFF_SIZE] = {};
 	//接受数据 处理粘包 拆分包
 	int RecvData(ClientScoket* clientSock)
 	{
+
 		//5.接受客户端请求数据
+		char* szRecv = clientSock->GetmsgBuf() + clientSock->GetLastPos();
+		_pNetevt->OnNetRecv(clientSock);
 		//数据存到szRecv中     第三个参数是可接收数据的最大长度
-		int nlen = (int)recv(clientSock->Getsockfd(), szRecv, RECV_BUFF_SIZE, 0);//返回值是接收的长度  revcz在mac返回值是long 建议强转int
+		int nlen = (int)recv(clientSock->Getsockfd(), szRecv, (RECV_BUFF_SIZE*5)-clientSock->GetLastPos(), 0);//返回值是接收的长度  revcz在mac返回值是long 建议强转int
 		if (nlen <= 0)
 		{
 			return -1;
 		}
 
 		//将收取打的数据拷贝到消息缓冲区
-		memcpy(clientSock->GetmsgBuf() + clientSock->GetLastPos(), szRecv, nlen);
+		//memcpy(clientSock->GetmsgBuf() + clientSock->GetLastPos(), szRecv, nlen);
 		//消息缓冲区的数据尾部位置后移
 		clientSock->SetLastPos(clientSock->GetLastPos() + nlen);
 
@@ -352,12 +357,14 @@ private:
 protected:
 	std::atomic_int _recvCount;//收到消息计数
 	std::atomic_int  _ClientCount;//客户端计数
+	std::atomic_int  _MsgCount;//SOCKET recv函数计数
 public:
 	EasyTcpServer()
 	{
 		_sock = INVALID_SOCKET;//无效地址
 		_recvCount = 0;
 		_ClientCount = 0;
+		_MsgCount = 0;
 	}
 	virtual ~EasyTcpServer()
 	{
@@ -566,7 +573,7 @@ public:
 		{
 			
 			
-			printf("thread<%d> time=%lf socket<%d>c RecvCount=%d\n", _cellServer.size(), t1, _sock, (int)(_recvCount/ t1));;
+			printf("thread<%d> time=%lf socket<%d> recv<%d> RecvCount=%d\n", _cellServer.size(), t1, _sock, (int)(_recvCount/ t1),(int)(_MsgCount/t1));;
 			_recvCount = 0;
 			_time.update();
 		}
@@ -595,6 +602,7 @@ public:
 	{
 		_ClientCount++;
 	}
+	virtual void OnNetRecv(ClientScoket* pClient){}
 
 private:
 
