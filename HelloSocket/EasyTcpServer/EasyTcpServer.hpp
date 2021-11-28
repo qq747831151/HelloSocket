@@ -32,9 +32,11 @@
 #include <atomic>
 #include<mutex>
 #include <map>
-#ifndef RECV_BUFF_SIZE
-//缓冲区区域最小单元大小 
-#define RECV_BUFF_SIZE 10240
+
+#ifndef RECV_BUFF_SIZE 
+//缓冲区区域最小单元大小  10240是10k
+#define RECV_BUFF_SIZE 10240*5
+#define SEND_BUFF_SIZE RECV_BUFF_SIZE
 #endif 
 
 /*客户端数据类型*/
@@ -45,7 +47,9 @@ public:
 	{
 		_sockfd = sock;
 		lastPos = 0;
+		lastSendPos = 0;
 		memset(szMsg, 0, sizeof(szMsg));
+		memset(szSend, 0, sizeof(szSend));
 	}
 	SOCKET Getsockfd() {
 		return _sockfd;
@@ -62,18 +66,57 @@ public:
 	//发送数据
 	int SendData(DataHeader*header)
 	{
-		if (header!=NULL)
+		int ret = SOCKET_ERROR;
+		//要发送的数据长度
+		int nSendLen = header->dataLength;
+		//发送的数据
+		const char* pSendData = (const char *)header;
+		while (true)
 		{
-			return send(_sockfd, (const char *)header, header->dataLength, 0);
+           //定量 发送数据
+			if (nSendLen+lastSendPos>=SEND_BUFF_SIZE)
+			{
+				//计算可拷贝的数据长度
+				int nCopylen = SEND_BUFF_SIZE - lastSendPos;
+				//拷贝数据
+				memcpy(szSend + lastSendPos, pSendData, nCopylen);
+				//计算剩余数据位置
+				pSendData += nCopylen;
+				//计算剩余数据长度
+				nSendLen -= nSendLen;
+				////发送数据
+				ret = send(_sockfd, szSend, SEND_BUFF_SIZE, 0);
+				//数据尾部位置设置0
+				lastSendPos = 0;
+				//发送错误
+				if (SOCKET_ERROR==ret)
+				{
+					return ret;
+				}
+			}
+			else {
+                //将要发送的数据 拷贝缓冲器尾部
+				memcpy(szSend + lastSendPos, pSendData, nSendLen);
+				//计算数据尾部位置
+				lastSendPos+=nSendLen;
+				break;
+			}
+
 		}
-		return SOCKET_ERROR;
+		return ret;
 	}
 private:
 	//第二缓冲区 消息缓冲区
-	char szMsg[RECV_BUFF_SIZE * 5];
+	char szMsg[RECV_BUFF_SIZE];
 	//消息缓冲的数据尾部的位置
 	int lastPos;
+	//第二缓冲区 发送缓冲区
+	char szSend[SEND_BUFF_SIZE];
+	//发送缓冲的数据尾部位置
+	int lastSendPos;
+
 	SOCKET _sockfd;
+
 
 };
 class INetEvent
@@ -270,8 +313,6 @@ public:
 		
 		}
 	}
-	//缓冲区
-	//char szRecv[RECV_BUFF_SIZE] = {};
 	//接受数据 处理粘包 拆分包
 	int RecvData(ClientScoket* clientSock)
 	{
@@ -280,7 +321,7 @@ public:
 		char* szRecv = clientSock->GetmsgBuf() + clientSock->GetLastPos();
 		_pNetevt->OnNetRecv(clientSock);
 		//数据存到szRecv中     第三个参数是可接收数据的最大长度
-		int nlen = (int)recv(clientSock->Getsockfd(), szRecv, (RECV_BUFF_SIZE*5)-clientSock->GetLastPos(), 0);//返回值是接收的长度  revcz在mac返回值是long 建议强转int
+		int nlen = (int)recv(clientSock->Getsockfd(), szRecv, (RECV_BUFF_SIZE)-clientSock->GetLastPos(), 0);//返回值是接收的长度  revcz在mac返回值是long 建议强转int
 		if (nlen <= 0)
 		{
 			return -1;
