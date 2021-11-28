@@ -27,21 +27,21 @@ public:
 	//客户端离开事件 CellServer 4 多个线程触发不安全 如果只开启1个cellServer 就是安全的
 	virtual void OnNetLeave(ClientScoket*pClient)
 	{
-		_ClientCount--;
-		//printf("client<%d> leave\n", pClient->Getsockfd());
+		EasyTcpServer::OnNetLeave(pClient);
 	}
 	/*客户端消息事件*/
-	virtual void OnNetMsg(DataHeader* header, ClientScoket *pClient)
+	virtual void OnNetMsg(CellServer*pCellServer, DataHeader* header, ClientScoket *pClient)
 	{
-		_recvCount++;
+		EasyTcpServer::OnNetMsg(pCellServer,header, pClient);
 		switch (header->cmd)
 		{
 		case CMD_LOGIN: {
 			Login* login = (Login*)header;
 			//printf("收到命令:%d 数据长度：%d username:%s password:%s\n", login->cmd, login->dataLength, login->userName, login->passWord);
 			/*忽略 判断用户名密码是否正确*/
-		//	LoginResult loginresult;
+			LoginResult* loginresult=new LoginResult();
 			//pClient->SendData(&loginresult);
+			pCellServer->addSendTask(pClient, loginresult);
 		}
 			break;
 		case CMD_LOGINOUT: {
@@ -62,13 +62,12 @@ public:
 	/*客户端加入事件*/
 	virtual void OnNetJoin(ClientScoket* pClient)
 	{
-		_ClientCount++;
-		//printf("client<%d> join\n", pClient->Getsockfd());
+		EasyTcpServer::OnNetJoin(pClient);
 	}
-	virtual void OnNetRecv(ClientScoket* pClient)
+	/*virtual void OnNetRecv(ClientScoket* pClient)
 	{
 		_recvCount++;
-	}
+	}*/
 };
 int main()
 {

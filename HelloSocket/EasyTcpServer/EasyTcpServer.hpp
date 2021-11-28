@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <vector>
 #include"CELLTimestamp.hpp"
-
+#include "CellTask.hpp"
 #include "MessAgeHeader.hpp"
 #include <thread>
 #include <functional>
@@ -48,8 +48,8 @@ public:
 		_sockfd = sock;
 		lastPos = 0;
 		lastSendPos = 0;
-		memset(szMsg, 0, sizeof(szMsg));
-		memset(szSend, 0, sizeof(szSend));
+		memset(szMsg, 0, RECV_BUFF_SIZE);
+		memset(szSend, 0, SEND_BUFF_SIZE);
 	}
 	SOCKET Getsockfd() {
 		return _sockfd;
@@ -106,10 +106,12 @@ public:
 		return ret;
 	}
 private:
+
 	//第二缓冲区 消息缓冲区
 	char szMsg[RECV_BUFF_SIZE];
 	//消息缓冲的数据尾部的位置
 	int lastPos;
+
 	//第二缓冲区 发送缓冲区
 	char szSend[SEND_BUFF_SIZE];
 	//发送缓冲的数据尾部位置
@@ -119,13 +121,14 @@ private:
 
 
 };
+class CellServer;//预定义
 class INetEvent
 {
 public:
 	/*客户端离开事件*/
 	virtual void OnNetLeave(ClientScoket* pClient) = 0;//纯虚函数
 	/*客户端消息事件*/
-	virtual void OnNetMsg(DataHeader* header, ClientScoket*pClient) = 0;//纯虚函数
+	virtual void OnNetMsg(CellServer*pCellServer,DataHeader* header, ClientScoket*pClient) = 0;//纯虚函数
 	/*客户端加入事件*/
 	virtual void OnNetJoin(ClientScoket* pClient) = 0;
 	/*Recv事件*/
@@ -136,8 +139,29 @@ private:
 
 };
 
+//网络消息发送任务
+class CellSendMsg2cTask:public CellTask
+{
+private:
+	ClientScoket* _pClient;
+	DataHeader* _header;
+public:
+	CellSendMsg2cTask(ClientScoket* pClient, DataHeader* header)
+	{
+		_pClient = pClient;
+		_header = header;
+	}
+	~CellSendMsg2cTask() {}
+	//执行任务
+	virtual void doTask()
+	{
+		_pClient->SendData(_header);
+		delete _pClient;
+	}
 
-/*处理客户端消息*/
+};
+
+/*网络消息接收处理服务类*/
 class CellServer
 {
 private:
@@ -151,6 +175,8 @@ private:
 	std::thread* _Pthread;
 	/*网络事件对象*/
 	INetEvent* _pNetevt;
+	//
+	CellTaskServer _taskServer;
 public:
 	CellServer(SOCKET sock=INVALID_SOCKET)
 	{
@@ -208,7 +234,7 @@ public:
 		while (IsRun())
 		{
 			//缓冲区
-			if (_clientsBuf.size()>0)
+			if (!_clientsBuf.empty())
 			{
 				//从缓冲区队列里取出客户数据
 				std::lock_guard<std::mutex> lock(_mutex);//锁住
@@ -362,7 +388,7 @@ public:
 	//响应网络消息
 	virtual void OnNetMsg(ClientScoket*pClient, DataHeader* header)
 	{
-		_pNetevt->OnNetMsg( header, pClient);
+		_pNetevt->OnNetMsg(this, header, pClient);
 	}
 
 	void addClient(ClientScoket* pClient)
@@ -376,11 +402,17 @@ public:
 	void Start()
 	{
 		_Pthread= new std::thread(std::mem_fn(&CellServer::OnRun), this);
+		_taskServer.Start();
 	}
 
 	size_t getClientCount()
 	{
 		return _clients.size() + _clientsBuf.size();
+	}
+	void addSendTask(ClientScoket*pClient,DataHeader*header)
+	{
+		CellSendMsg2cTask* task = new CellSendMsg2cTask(pClient, header);
+		_taskServer.addTask(task);
 	}
 
 private:
@@ -635,15 +667,18 @@ public:
 	{
 		_ClientCount--;
 	}
-	virtual void OnNetMsg(DataHeader* header, ClientScoket*pClient) 
+	virtual void OnNetMsg(CellServer*pCellServer,DataHeader* header, ClientScoket*pClient) 
 	{
-		_recvCount++;
+		_MsgCount++;
 	}
 	virtual void OnNetJoin(ClientScoket* pClient)
 	{
 		_ClientCount++;
 	}
-	virtual void OnNetRecv(ClientScoket* pClient){}
+	virtual void OnNetRecv(ClientScoket* pClient)
+	{
+		_recvCount++;
+	}
 
 private:
 

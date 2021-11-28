@@ -20,7 +20,7 @@ void cmdThread()
 		}
 	}
 }
-const int Count = 10000;//客户端数量
+const int Count = 1000;//客户端数量
 const int tCount = 4;//线程数量
 EasyTcpClient* clients[Count];
 
