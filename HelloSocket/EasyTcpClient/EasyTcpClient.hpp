@@ -111,7 +111,6 @@ public:
 
 	}
 	//查询网络消息
-	int _nCount = 0;
 	bool OnRun()
 	{
 		if (IsRun())
@@ -155,7 +154,7 @@ public:
 	//接收缓冲区
 	//char szRecv[RECV_BUFF_SIZE] = {};
 	//第二缓冲区 消息缓冲区
-	char szMsg[RECV_BUFF_SIZE * 5] = {};
+	char szMsg[RECV_BUFF_SIZE ] = {};
 	//消息缓冲的数据尾部位置
 	int lastPos = 0;
 	/*接收数据  处理粘包 拆包*/
@@ -164,7 +163,7 @@ public:
 		//5.接受服务端发送来的数据
 		char* szRecv = szMsg + lastPos;
 		//数据存到szRecv中     第三个参数是可接收数据的最大长度
-		int nlen = (int)recv(clientSock, szRecv, (RECV_BUFF_SIZE*5)-lastPos, 0);//返回值是接收的长度  MAC修改的地方
+		int nlen = (int)recv(clientSock, szRecv, (RECV_BUFF_SIZE)-lastPos, 0);//返回值是接收的长度  MAC修改的地方
 		if (nlen <= 0)
 		{
 			printf("客户端<socket=%d>退出,任务结束\n", clientSock);

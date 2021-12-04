@@ -1,4 +1,6 @@
-﻿#include "EasyTcpServer.hpp"
+﻿#pragma  once
+#include "EasyTcpServer.hpp"
+#include "Alloc.h"
 #include <thread>
 #include <stdio.h>
 bool g_bExit = true;//线程退出
@@ -77,8 +79,10 @@ int main()
 	server.Bind(nullptr, 4567);
 	server.Listen(5);
 	server.Start(4);
+
 	std::thread t1(cmdThread);
 	t1.detach();
+
 	while (g_bExit)
 	{
 		server.OnRun();

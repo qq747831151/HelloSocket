@@ -1,6 +1,5 @@
 #ifndef _CELLTimestamp_hpp_
 #define _CELLTimestamp_hpp_
-
 //#include <windows.h>
 #include<chrono>
 using namespace std::chrono;

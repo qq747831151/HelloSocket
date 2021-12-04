@@ -1,7 +1,8 @@
+#pragma  once
 #ifndef _EasyTcpServer_HPP
 #define  _EasyTcpServer_HPP
 #ifdef _WIN32
-#define FD_SETSIZE 2506
+#define FD_SETSIZE 256
 #define WIN32_LEAN_AND_MEAN//不影响 windows.h 和 WinSock2.h 前后顺序 
 #define _WINSOCK_DEPRECATED_NO_WARNINGS //这个用于 inet_ntoa   可以在右击项目属性 C/C++ 预处理里面 预处理定义添加
 #include <windows.h>
@@ -35,7 +36,7 @@
 
 #ifndef RECV_BUFF_SIZE 
 //缓冲区区域最小单元大小  10240是10k
-#define RECV_BUFF_SIZE 10240*5
+#define RECV_BUFF_SIZE 10240
 #define SEND_BUFF_SIZE RECV_BUFF_SIZE
 #endif 
 
@@ -43,7 +44,7 @@
 class ClientScoket
 {
 public:
-	ClientScoket(SOCKET sock)
+	ClientScoket(SOCKET sock = INVALID_SOCKET)
 	{
 		_sockfd = sock;
 		lastPos = 0;
@@ -64,17 +65,17 @@ public:
 		lastPos = pos;
 	}
 	//发送数据
-	int SendData(DataHeader*header)
+	int SendData(DataHeader* header)
 	{
 		int ret = SOCKET_ERROR;
 		//要发送的数据长度
 		int nSendLen = header->dataLength;
 		//发送的数据
-		const char* pSendData = (const char *)header;
+		const char* pSendData = (const char*)header;
 		while (true)
 		{
-           //定量 发送数据
-			if (nSendLen+lastSendPos>=SEND_BUFF_SIZE)
+			//定量 发送数据
+			if (nSendLen + lastSendPos >= SEND_BUFF_SIZE)
 			{
 				//计算可拷贝的数据长度
 				int nCopylen = SEND_BUFF_SIZE - lastSendPos;
@@ -83,22 +84,22 @@ public:
 				//计算剩余数据位置
 				pSendData += nCopylen;
 				//计算剩余数据长度
-				nSendLen -= nSendLen;
-				////发送数据
+				nSendLen -= nCopylen;
+				//发送数据
 				ret = send(_sockfd, szSend, SEND_BUFF_SIZE, 0);
 				//数据尾部位置设置0
 				lastSendPos = 0;
 				//发送错误
-				if (SOCKET_ERROR==ret)
+				if (SOCKET_ERROR == ret)
 				{
 					return ret;
 				}
 			}
 			else {
-                //将要发送的数据 拷贝缓冲器尾部
+				//将要发送的数据 拷贝缓冲器尾部
 				memcpy(szSend + lastSendPos, pSendData, nSendLen);
 				//计算数据尾部位置
-				lastSendPos+=nSendLen;
+				lastSendPos += nSendLen;
 				break;
 			}
 
@@ -115,12 +116,11 @@ private:
 	//第二缓冲区 发送缓冲区
 	char szSend[SEND_BUFF_SIZE];
 	//发送缓冲的数据尾部位置
-	int lastSendPos;
+	int lastSendPos = 0;
 
 	SOCKET _sockfd;
-
-
 };
+
 class CellServer;//预定义
 class INetEvent
 {
@@ -142,7 +142,6 @@ private:
 //网络消息发送任务
 class CellSendMsg2cTask:public CellTask
 {
-private:
 	ClientScoket* _pClient;
 	DataHeader* _header;
 public:
@@ -151,9 +150,8 @@ public:
 		_pClient = pClient;
 		_header = header;
 	}
-	~CellSendMsg2cTask() {}
 	//执行任务
-	virtual void doTask()
+	 void doTask()
 	{
 		_pClient->SendData(_header);
 		delete _pClient;
@@ -164,19 +162,6 @@ public:
 /*网络消息接收处理服务类*/
 class CellServer
 {
-private:
-	/*缓冲队列的锁*/
-	std::mutex _mutex;
-	SOCKET _sock;
-	//正式客户端队列
-	std::map<SOCKET,ClientScoket*>_clients;
-	//缓冲客户端队列
-	std::vector<ClientScoket*>_clientsBuf;
-	std::thread* _Pthread;
-	/*网络事件对象*/
-	INetEvent* _pNetevt;
-	//
-	CellTaskServer _taskServer;
 public:
 	CellServer(SOCKET sock=INVALID_SOCKET)
 	{
@@ -198,11 +183,10 @@ public:
 		if (_sock != INVALID_SOCKET)
 		{
 #ifdef _WIN32
-			for (int n =(int) _clients.size() - 1; n >= 0; n--)
+			for (auto iter : _clients)
 			{
-				closesocket(_clients[n]->Getsockfd());
-				delete _clients[n];
-
+				closesocket(iter.second->Getsockfd());
+				delete iter.second;
 			}
 			/*关闭套接字*/
 			closesocket(_sock);
@@ -227,10 +211,10 @@ public:
 	fd_set fdRead_bak;
 	//客户列表是否有变化
 	bool _client_change;//优化的地方
+	SOCKET maxSocket;
 	bool OnRun()
 	{
 		_client_change = true;
-		SOCKET maxSocket;
 		while (IsRun())
 		{
 			//缓冲区
@@ -280,7 +264,7 @@ public:
 			struct timeval time;
 			time.tv_sec = 0;
 			time.tv_usec = 0;
-			int ret = select(maxSocket+1, &fdRead, nullptr, nullptr, &time);
+			int ret = select(maxSocket+1, &fdRead, nullptr, nullptr,nullptr);
 			if (ret < 0)
 			{
 				printf("select任务结束2.\n");
@@ -345,9 +329,9 @@ public:
 
 		//5.接受客户端请求数据
 		char* szRecv = clientSock->GetmsgBuf() + clientSock->GetLastPos();
-		_pNetevt->OnNetRecv(clientSock);
 		//数据存到szRecv中     第三个参数是可接收数据的最大长度
 		int nlen = (int)recv(clientSock->Getsockfd(), szRecv, (RECV_BUFF_SIZE)-clientSock->GetLastPos(), 0);//返回值是接收的长度  revcz在mac返回值是long 建议强转int
+		_pNetevt->OnNetRecv(clientSock);
 		if (nlen <= 0)
 		{
 			return -1;
@@ -416,6 +400,18 @@ public:
 	}
 
 private:
+	SOCKET _sock;
+	//正式客户端队列
+	std::map<SOCKET, ClientScoket*>_clients;
+	//缓冲客户端队列
+	std::vector<ClientScoket*>_clientsBuf;
+	/*缓冲队列的锁*/
+	std::mutex _mutex;
+	std::thread* _Pthread;
+	/*网络事件对象*/
+	INetEvent* _pNetevt;
+	//
+	CellTaskServer _taskServer;
 
 };
 
@@ -444,7 +440,7 @@ public:
 		Close();
 	}
 	//初始化
-	void InitSocket()
+	SOCKET InitSocket()
 	{
 #ifdef _WIN32
 		/*启动socket网络环境 2.x环境*/
@@ -468,7 +464,7 @@ public:
 		{
 			printf("TURE,<socket=%d>建立socket成功.....\n", _sock);
 		}
-
+		return _sock;
 	}
 	int Bind(const char *ip,unsigned short port)
 	{
@@ -648,6 +644,7 @@ public:
 			
 			printf("thread<%d> time=%lf socket<%d> recv<%d> RecvCount=%d\n", _cellServer.size(), t1, _sock, (int)(_recvCount/ t1),(int)(_MsgCount/t1));;
 			_recvCount = 0;
+			_MsgCount = 0;
 			_time.update();
 		}
 		
