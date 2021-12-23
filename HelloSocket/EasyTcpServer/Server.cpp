@@ -1,8 +1,7 @@
-﻿#pragma  once
+﻿
 #include "EasyTcpServer.hpp"
 #include "Alloc.h"
 #include <thread>
-#include <stdio.h>
 bool g_bExit = true;//线程退出
 void cmdThread()
 {
@@ -26,13 +25,19 @@ void cmdThread()
 class MyServer :public EasyTcpServer
 {
 public:
+	/*客户端加入事件*/
+	virtual void OnNetJoin(CellClient* pClient)
+	{
+		EasyTcpServer::OnNetJoin(pClient);
+	}
+
 	//客户端离开事件 CellServer 4 多个线程触发不安全 如果只开启1个cellServer 就是安全的
-	virtual void OnNetLeave(ClientScoket*pClient)
+	virtual void OnNetLeave(CellClient*pClient)
 	{
 		EasyTcpServer::OnNetLeave(pClient);
 	}
 	/*客户端消息事件*/
-	virtual void OnNetMsg(CellServer*pCellServer, DataHeader* header, ClientScoket *pClient)
+	virtual void OnNetMsg(CellServer*pCellServer, DataHeader* header, CellClient *pClient)
 	{
 		EasyTcpServer::OnNetMsg(pCellServer,header, pClient);
 		switch (header->cmd)
@@ -60,11 +65,6 @@ public:
 			//SendData(&dp, _clientSock);
 			break;
 		}
-	}
-	/*客户端加入事件*/
-	virtual void OnNetJoin(ClientScoket* pClient)
-	{
-		EasyTcpServer::OnNetJoin(pClient);
 	}
 	/*virtual void OnNetRecv(ClientScoket* pClient)
 	{

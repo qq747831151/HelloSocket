@@ -4,11 +4,12 @@
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
-/*为了可以在其他平台也可以使用 右键项目属性 选择链接器 附加依赖项 将ws2_32.lib 添加进去就行 这样就不需要 下面这些 */
-#pragma  comment(lib,"ws2_32.lib")
-#define _WINSOCK_DEPRECATED_NO_WARNINGS //影响inet_addr
 #include <windows.h>
 #include <WINSock2.h>
+/*为了可以在其他平台也可以使用 右键项目属性 选择链接器 附加依赖项 将ws2_32.lib 添加进去就行 这样就不需要 下面这些 */
+#pragma  comment(lib,"ws2_32.lib")
+//#define _WINSOCK_DEPRECATED_NO_WARNINGS //影响inet_addr
+
 
 #else
 
@@ -16,7 +17,6 @@
 #include<arpa/inet.h>
 #include<string.h>
 #include<sys/select.h>
-#include<pthread.h>
 
 #define  SOCKET int
 #define INVALID_SOCKET  (SOCKET)(~0)
@@ -26,14 +26,13 @@
 
 
 #include <stdio.h>
-#include <thread>
 #include "MessAgeHeader.hpp"
 
 
 class EasyTcpClient
 {
-	bool _isConnect;
 	SOCKET _sock;
+	bool _isConnect;
 public:
 	EasyTcpClient() 
 	{
@@ -73,6 +72,10 @@ public:
 	}
 	int Connect(const char *ip,unsigned short port )
 	{
+		if (INVALID_SOCKET == _sock)
+		{
+			InitSocket();
+		}
 		//2.连接服务器 connect
 		sockaddr_in _sin;
 		_sin.sin_family = AF_INET;
@@ -118,7 +121,7 @@ public:
 			fd_set fdRead;
 			FD_ZERO(&fdRead);
 			FD_SET(_sock, &fdRead);
-			struct timeval _time;
+			 timeval _time;
 			_time.tv_sec = 0;
 			_time.tv_usec = 0;
 			int ret = select(_sock + 1, &fdRead, 0, 0, &_time);
@@ -209,7 +212,7 @@ public:
 		case  CMD_LOGINRESULT:
 		{
 			LoginResult* loginResult = (LoginResult*)header;
-	//	printf("收到服务器消息是 CMD_LOGINRESUL 数据长度:%d\n", loginResult->dataLength);
+		//printf("收到服务器消息是 CMD_LOGINRESUL 数据长度:%d\n", loginResult->dataLength);
 		}
 		break;
 		case  CMD_LOGINOUTRESULT:
@@ -250,8 +253,5 @@ public:
 		}
 		return ret;
 	}
-private:
-
 };
 #endif 
-

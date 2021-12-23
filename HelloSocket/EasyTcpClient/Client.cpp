@@ -1,6 +1,7 @@
 #include "EasyTcpClient.hpp"
 #include "CELLTimestamp.hpp"
 #include <atomic>
+#include <thread>
 bool g_bExit = true;//线程退出
 void cmdThread()
 {
@@ -26,6 +27,17 @@ EasyTcpClient* clients[Count];
 
 std::atomic_int sendCount = 0;
 std::atomic_int readyCount = 0;
+
+void recvThread(int begin, int end)
+{
+	while (g_bExit)
+	{
+		for (int n = begin; n < end; n++)
+		{
+			clients[n]->OnRun();
+		}
+	}
+}
 //发送线程
 void SendThread(int id)
 {
@@ -40,7 +52,7 @@ void SendThread(int id)
 	}
 	for (int i = begin; i < end; i++)
 	{
-		clients[i]->InitSocket();
+		//clients[i]->InitSocket();
 		clients[i]->Connect("192.168.17.1", 4567);
 	}
 	printf("thread<%d> Connect <begin=%d   end=%d>\n", id, begin, end);
@@ -51,14 +63,15 @@ void SendThread(int id)
 		std::chrono::microseconds t(10);//3000毫秒=3秒
 		std::this_thread::sleep_for(t);
 	}
-	std::chrono::milliseconds t(3000);
-	std::this_thread::sleep_for(t);
+	std::thread t1(recvThread, begin, end);
+	t1.detach();
 	Login login[10];
 	for (int i = 0; i < 10; i++)
 	{
 		strcpy(login[i].passWord, "123");
 		strcpy(login[i].userName, "321");
 	}
+
 	const int nlen = sizeof(login);//这个严重影响发送的包  很重要 这样就不用继续计算长度了 影响性能
 	while (g_bExit)
 	{
@@ -67,8 +80,6 @@ void SendThread(int id)
 			if (clients[i]->SendData(login, nlen) != -1) {
 				sendCount++;
 			}
-			
-			clients[i]->OnRun();
 		}
 
 	}
@@ -108,6 +119,6 @@ int main()
 		Sleep(1);
 		
 	}
-	getchar();
+	printf("已退出。\n");
 	return 0;
 }
