@@ -9,25 +9,25 @@
 #include<vector>
 #include<map>
 
-//网络消息发送任务
-class CellSendMsg2ClientTask :public CellTask
-{
-	CellClient* _pClient;
-	DataHeader* _pHeader;
-public:
-	CellSendMsg2ClientTask(CellClient* pClient, DataHeader* header)
-	{
-		_pClient = pClient;
-		_pHeader = header;
-	}
-
-	//执行任务
-	void doTask()
-	{
-		_pClient->SendData(_pHeader);
-		delete _pHeader;
-	}
-};
+//网络消息发送任务  这些代码无效
+//class CellSendMsg2ClientTask :public CellTask
+//{
+//	CellClient* _pClient;
+//	DataHeader* _pHeader;
+//public:
+//	CellSendMsg2ClientTask(CellClient* pClient, DataHeader* header)
+//	{
+//		_pClient = pClient;
+//		_pHeader = header;
+//	}
+//
+//	//执行任务
+//	void doTask()
+//	{
+//		_pClient->SendData(_pHeader);
+//		delete _pHeader;
+//	}
+//};
 
 //网络消息接收处理服务类
 class CellServer
@@ -262,8 +262,13 @@ public:
 
 	void addSendTask(CellClient* pClient, DataHeader* header)
 	{
-		CellSendMsg2ClientTask* task = new CellSendMsg2ClientTask(pClient, header);
-		_taskServer.addTask(task);
+		_taskServer.addTask([pClient, header]()
+			{
+				pClient->SendData(header);
+				delete header;
+			}
+				);
+
 	}
 private:
 	SOCKET _sock;
