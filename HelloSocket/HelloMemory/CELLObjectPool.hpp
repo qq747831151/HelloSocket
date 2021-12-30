@@ -15,6 +15,7 @@
 #endif
 #endif // _DEBUG
 
+//∂‘œÛ≥ÿ 
 template<class Type, size_t nPoolSzie>
 class CELLObjectPool
 {

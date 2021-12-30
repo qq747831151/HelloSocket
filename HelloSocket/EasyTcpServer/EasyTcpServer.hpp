@@ -6,6 +6,7 @@
 #include "CellClient.hpp"
 #include "CellServer.hpp"
 #include "INetEvent.hpp"
+#include "CEllObjectPool.hpp"
 //#include <stdio.h>
 //#include <stdlib.h>
 
@@ -15,12 +16,7 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
-
-
-
-
-
-
+#include <memory>
 class EasyTcpServer:public INetEvent
 {
 private:

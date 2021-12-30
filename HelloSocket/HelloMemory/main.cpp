@@ -109,6 +109,7 @@ int main()
 
 	/*
 	{
+	//只能指针帮我们申请内存和释放内存 释放内存我们不用delete 
 		shared_ptr<ClassA> b = make_shared<ClassA>(100);
 		b->num = 200;
 		CELLTimestamp tTime;

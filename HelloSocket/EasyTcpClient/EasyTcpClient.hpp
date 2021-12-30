@@ -157,6 +157,7 @@ public:
 	//接收缓冲区
 	//char szRecv[RECV_BUFF_SIZE] = {};
 	//第二缓冲区 消息缓冲区
+	//原来是 char szMsg[RECV_BUFF_SIZE*5 ] = {};
 	char szMsg[RECV_BUFF_SIZE ] = {};
 	//消息缓冲的数据尾部位置
 	int lastPos = 0;

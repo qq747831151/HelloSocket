@@ -73,13 +73,20 @@ void SendThread(int id)
 	}
 
 	const int nlen = sizeof(login);//这个严重影响发送的包  很重要 这样就不用继续计算长度了 影响性能
+	bool isSend = false;
 	while (g_bExit)
 	{
 		for (int i = begin; i < end; i++)
 		{
-			if (clients[i]->SendData(login, nlen) != -1) {
-				sendCount++;
-			}
+			//if (!isSend)
+			//{
+				if (clients[i]->SendData(login, nlen) != -1) {
+					sendCount++;
+				}
+				//isSend = true;
+			//}
+			
+			
 		}
 
 	}

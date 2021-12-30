@@ -40,7 +40,7 @@ private:
 	std::mutex _mutex;
 public:
 	//Ìí¼ÓÈÎÎñ
-	void addTask(CellTask* task)
+	void addTask(CellTask *task)
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
 		_tasksBuf.push_back(task);

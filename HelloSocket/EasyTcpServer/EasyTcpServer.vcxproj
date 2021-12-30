@@ -154,6 +154,7 @@
     <ClInclude Include="Alloc.h" />
     <ClInclude Include="Cell.hpp" />
     <ClInclude Include="CellClient.hpp" />
+    <ClInclude Include="CEllObjectPool.hpp" />
     <ClInclude Include="CellServer.hpp" />
     <ClInclude Include="CellTask.hpp" />
     <ClInclude Include="CELLTimestamp.hpp" />
