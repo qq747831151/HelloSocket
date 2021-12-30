@@ -27,7 +27,6 @@ EasyTcpClient* clients[Count];
 
 std::atomic_int sendCount = 0;
 std::atomic_int readyCount = 0;
-
 void recvThread(int begin, int end)
 {
 	while (g_bExit)
@@ -63,8 +62,10 @@ void SendThread(int id)
 		std::chrono::microseconds t(10);//3000毫秒=3秒
 		std::this_thread::sleep_for(t);
 	}
+	/*启动接收线程*/
 	std::thread t1(recvThread, begin, end);
-	t1.detach();
+	t1.detach();//线程分离
+
 	Login login[10];
 	for (int i = 0; i < 10; i++)
 	{
