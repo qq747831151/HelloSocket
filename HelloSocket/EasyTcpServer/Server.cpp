@@ -43,12 +43,15 @@ public:
 		switch (header->cmd)
 		{
 		case CMD_LOGIN: {
+
+			pClient->resetDtHeart();
+
 			Login* login = (Login*)header;
 			//printf("收到命令:%d 数据长度：%d username:%s password:%s\n", login->cmd, login->dataLength, login->userName, login->passWord);
 			/*忽略 判断用户名密码是否正确*/
-			LoginResult* loginresult=new LoginResult();
-			//pClient->SendData(&loginresult);
-			pCellServer->addSendTask(pClient, loginresult);
+			LoginResult loginresult;
+			pClient->SendData(&loginresult);
+			//pCellServer->addSendTask(pClient, loginresult);
 		}
 			break;
 		case CMD_LOGINOUT: {
@@ -59,6 +62,16 @@ public:
 			//pClient->SendData(&loginOutresult);
 		}
 					  break;
+		case  CMD_HEART_C2S:
+
+		{
+
+			/*假如客户端有发送消息过来,就认为客户端有心跳了 重置计时为0*/
+			pClient->resetDtHeart();
+			netmsg_s2c_Heart ret;
+			pClient->SendData(&ret);
+		}
+		break;
 		default:
 			printf("<socket=%d>收到未定义消息 数据长度：%d \n", pClient->Getsockfd(), header->dataLength);
 			//DataHeader dp;

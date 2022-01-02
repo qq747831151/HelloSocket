@@ -54,6 +54,7 @@ void SendThread(int id)
 		//clients[i]->InitSocket();
 		clients[i]->Connect("192.168.17.1", 4567);
 	}
+	/*ĞÄÌø¼ì²â ËÀÍöµ¹¼ÆÊ±*/
 	printf("thread<%d> Connect <begin=%d   end=%d>\n", id, begin, end);
 	readyCount++;
 	while (readyCount<tCount)

@@ -109,6 +109,8 @@ public:
 			{
 				std::chrono::milliseconds t(1);
 				std::this_thread::sleep_for(t);
+				//旧的时间戳
+				_oldTime = CELLTime::getNowInMilliSec();
 				continue;
 			}
 
@@ -191,6 +193,82 @@ public:
 #endif
 		}
 	}
+	//旧的时间戳
+	time_t _oldTime = CELLTime::getNowInMilliSec();
+
+	/*检查时间*/
+	void CheckTime()
+	{
+		//当前时间戳
+		auto nowTime = CELLTime::getNowInMilliSec();
+		auto dt = nowTime - _oldTime;
+		_oldTime = nowTime;
+
+		for (auto iter = _clients.begin(); iter !=_clients.end();)
+		{
+			if (iter->second->checkHeart(dt))
+			{
+				if (_pNetEvent)
+					_pNetEvent->OnNetLeave(iter->second);
+				_clients_change = true;
+				delete iter->second;
+				auto iterOld = iter;
+				iter++;
+				_clients.erase(iterOld);
+				continue;
+			}
+			iter++;
+		}
+	}
+
+	/*读出数据*/
+	void ReadData(fd_set& fdRead)
+	{
+#ifdef _WIN32
+		// 在windows中 fd_read.fd_count 认为是保留发生事件的socket的数量
+		for (int n = 0; n < fdRead.fd_count; n++)
+		{
+			auto iter = _clients.find(fdRead.fd_array[n]);
+			if (iter!=_clients.end())
+			{
+				if (-1==RecvData(iter->second))
+				{
+					if (_pNetEvent)
+						_pNetEvent->OnNetLeave(iter->second);
+					_clients_change = true;
+					delete iter->second;
+					closesocket(iter->first);
+					_clients.erase(iter);
+				}
+			}
+			else {
+				printf("error. if (iter != _clients.end())\n");
+			}
+
+		}
+#else
+std::vector<CellClient*> temp;
+			for (auto iter : _clients)
+			{
+				if (FD_ISSET(iter.second->Getsockfd(), &fdRead))
+				{
+					if (-1 == RecvData(iter.second))
+					{
+						if (_pNetEvent)
+							_pNetEvent->OnNetLeave(iter.second);
+						_clients_change = true;
+						close(iter->first);
+						temp.push_back(iter.second);
+					}
+				}
+			}
+			for (auto pClient : temp)
+			{
+				_clients.erase(pClient->Getsockfd());
+				delete pClient;
+			}
+#endif
+	}
 	//接收数据 处理粘包 拆分包
 	int RecvData(CellClient* pClient)
 	{
@@ -260,16 +338,17 @@ public:
 		return _clients.size() + _clientsBuff.size();
 	}
 
-	void addSendTask(CellClient* pClient, DataHeader* header)
-	{
-		_taskServer.addTask([pClient, header]()
-			{
-				pClient->SendData(header);
-				delete header;
-			}
-				);
+	/*暂时用不到 后面案例会经常使用*/
+	//void addSendTask(CellClient* pClient, DataHeader* header)
+	//{
+	//	_taskServer.addTask([pClient, header]()
+	//		{
+	//			pClient->SendData(header);
+	//			delete header;
+	//		}
+	//			);
 
-	}
+	//}
 private:
 	SOCKET _sock;
 	//正式客户队列

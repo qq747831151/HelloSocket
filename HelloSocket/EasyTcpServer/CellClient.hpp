@@ -3,6 +3,10 @@
 
 #include"Cell.hpp"
 
+
+//客户端心跳检测死亡计时时间 5000毫秒=5秒钟
+#define  CLIENT_HEARY_DEAD_TIME 5000
+
 //客户端数据类型
 class CellClient
 {
@@ -15,6 +19,7 @@ public:
 
 		memset(_szSendBuf, 0, SEND_BUFF_SIZE);
 		_lastSendPos = 0;
+		resetDtHeart();
 	}
 
 	SOCKET Getsockfd()
@@ -78,6 +83,22 @@ public:
 		}
 		return ret;
 	}
+	/*将心跳检测重置为0*/
+	void resetDtHeart()
+	{
+		_dtHeart = 0;
+	}
+	//心跳检测
+	bool checkHeart(time_t dt)
+	{
+		_dtHeart += dt;
+		if (_dtHeart>=CLIENT_HEARY_DEAD_TIME)
+		{
+			printf("checkHeart dead=%d,time=%d\n", _sockfd, _dtHeart);
+			return true;
+		}
+		return false;
+	}
 
 private:
 	// socket fd_set  file desc set
@@ -91,6 +112,9 @@ private:
 	char _szSendBuf[SEND_BUFF_SIZE];
 	//发送缓冲区的数据尾部位置
 	int _lastSendPos;
+
+	//心跳死亡计时
+	time_t _dtHeart;
 };
 
 #endif // !_CellClient_hpp_

@@ -6,6 +6,8 @@ enum CMD
 	CMD_LOGINOUTRESULT,
 	CMD_ERROR,
 	CMD_NEW_USER_JOIN,
+	CMD_HEART_C2S,
+	CMD_S2C_HEART,
 
 };
 //ÏûÏ¢Í·
@@ -77,4 +79,21 @@ struct LoginNewUser :DataHeader
 		sock = 0;
 	}
 	int sock;
+};
+struct netmsg_c2s_Heart : public DataHeader
+{
+	netmsg_c2s_Heart()
+	{
+		dataLength = sizeof(netmsg_c2s_Heart);
+		cmd = CMD_HEART_C2S;
+	}
+};
+
+struct netmsg_s2c_Heart : public DataHeader
+{
+	netmsg_s2c_Heart()
+	{
+		dataLength = sizeof(netmsg_s2c_Heart);
+		cmd = CMD_S2C_HEART;
+	}
 };
