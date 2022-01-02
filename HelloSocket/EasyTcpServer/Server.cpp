@@ -44,6 +44,7 @@ public:
 		{
 		case CMD_LOGIN: {
 
+			/*假如客户端有发送消息过来 就认为客户端有心跳了 重置计时为0*/
 			pClient->resetDtHeart();
 
 			Login* login = (Login*)header;

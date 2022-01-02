@@ -196,7 +196,7 @@ public:
 	//旧的时间戳
 	time_t _oldTime = CELLTime::getNowInMilliSec();
 
-	/*检查时间*/
+	/*检查时间  很影响性能*/
 	void CheckTime()
 	{
 		//当前时间戳

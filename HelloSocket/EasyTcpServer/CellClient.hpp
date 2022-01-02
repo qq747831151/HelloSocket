@@ -4,8 +4,8 @@
 #include"Cell.hpp"
 
 
-//客户端心跳检测死亡计时时间 5000毫秒=5秒钟
-#define  CLIENT_HEARY_DEAD_TIME 5000
+//客户端心跳检测死亡计时时间 60000毫秒=60秒钟
+#define  CLIENT_HEARY_DEAD_TIME 60000
 
 //客户端数据类型
 class CellClient
