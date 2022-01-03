@@ -146,52 +146,11 @@ public:
 				Close();
 				return;
 			}
-			else if (ret == 0)
-			{
-				continue;
-			}
-
-#ifdef _WIN32
-			for (int n = 0; n < fdRead.fd_count; n++)
-			{
-				auto iter = _clients.find(fdRead.fd_array[n]);
-				if (iter != _clients.end())
-				{
-					if (-1 == RecvData(iter->second))
-					{
-						if (_pNetEvent)
-							_pNetEvent->OnNetLeave(iter->second);
-						_clients_change = true;
-						_clients.erase(iter->first);
-					}
-				}
-				else {
-					printf("error. if (iter != _clients.end())\n");
-				}
-
-			}
-#else
-			std::vector<CellClient*> temp;
-			for (auto iter : _clients)
-			{
-				if (FD_ISSET(iter.second->Getsockfd(), &fdRead))
-				{
-					if (-1 == RecvData(iter.second))
-					{
-						if (_pNetEvent)
-							_pNetEvent->OnNetLeave(iter.second);
-						_clients_change = false;
-						temp.push_back(iter.second);
-					}
-				}
-			}
-			for (auto pClient : temp)
-			{
-				_clients.erase(pClient->Getsockfd());
-				delete pClient;
-			}
-#endif
+			ReadData(fdRead);
+			CheckTime();
 		}
+		
+
 	}
 	//旧的时间戳
 	time_t _oldTime = CELLTime::getNowInMilliSec();
@@ -206,6 +165,7 @@ public:
 
 		for (auto iter = _clients.begin(); iter !=_clients.end();)
 		{
+			//心跳检测
 			if (iter->second->checkHeart(dt))
 			{
 				if (_pNetEvent)
@@ -217,6 +177,8 @@ public:
 				_clients.erase(iterOld);
 				continue;
 			}
+			//定时发送检测
+			iter->second->checkSend(dt);
 			iter++;
 		}
 	}
