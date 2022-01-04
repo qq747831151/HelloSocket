@@ -16,6 +16,8 @@ class CellClient
 public:
 	CellClient(SOCKET sockfd = INVALID_SOCKET)
 	{
+		static int n = 1;
+		_ID = n++;
 		_sockfd = sockfd;
 		memset(_szMsgBuf, 0, RECV_BUFF_SIZE);
 		_lastPos = 0;
@@ -25,7 +27,20 @@ public:
 		resetDtHeart();
 		resetDtSend();
 	}
+	~CellClient()
+	{
+		printf("s=%d CellClient%d.~CellClient\n", _serverID, _ID);
+		if (_sockfd != INVALID_SOCKET)
+		{
+#ifdef _WIN32
+			closesocket(_sockfd);
+#else
+			close(_sockfd);
+#endif
+			_sockfd = 0;
+		}
 
+	}
 	SOCKET Getsockfd()
 	{
 		return _sockfd;
@@ -139,7 +154,9 @@ public:
 		return false;
 
 	}
-
+public:
+	int _ID = -1;
+	int _serverID = -1;
 private:
 	// socket fd_set  file desc set
 	SOCKET _sockfd;

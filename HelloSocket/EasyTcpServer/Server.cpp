@@ -102,7 +102,11 @@ int main()
 		server.OnRun();
 	}
 	server.Close();
-	getchar();
+	
+	while (true)
+	{
+		Sleep(1);
+	}
 	return 0;
 
 }
