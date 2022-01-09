@@ -6,7 +6,7 @@
 #include<list>
 #include <functional>
 #include "CellSemaphore.hpp"
-
+#include "CellThread.hpp"
 
 //执行任务的服务类型
 class CellTaskServer
@@ -23,10 +23,8 @@ private:
 	std::list<CellTask> _tasksBuf;
 	//改变数据缓冲区时需要加锁
 	std::mutex _mutex;
-
 	//
-	bool _isRun = false;
-	CellSemaphore _sem;
+	CellThread _thread;
 public:
 	//添加任务
 	void addTask(CellTask task)
@@ -37,27 +35,22 @@ public:
 	//启动工作线程
 	void Start()
 	{
-		_isRun = true;
-		//线程
-		std::thread t(std::mem_fn(&CellTaskServer::OnRun), this);
-		t.detach();
+		_thread.Start(nullptr, [this](CellThread* pThread)
+			{
+				OnRun(pThread);
+			});
 	}
 	void Close()
 	{
 		printf("CellTaskServer%d.Close1\n", _serverID);
-		if (_isRun)
-		{
-			_isRun = false;
-			_sem.wait();
-
-		}
+		_thread.Close();
 		printf("CellTaskServer%d.Close2\n", _serverID);
 	}
 protected:
 	//工作函数
-	void OnRun()
+	void OnRun(CellThread*pthread)
 	{
-		while (_isRun)
+		while (pthread->isRun())
 		{
 			//从缓冲区取出数据
 			if (!_tasksBuf.empty())
@@ -85,8 +78,12 @@ protected:
 			//清空任务
 			_tasks.clear();
 		}
+		//处理缓冲队列中的任务
+		for (auto pTask : _tasksBuf)
+		{
+			pTask();
+		}
 		printf("CellTaskServer%d.OnRun\n", _serverID);
-		_sem.wakeup();
 
 	}
 };

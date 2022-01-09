@@ -60,6 +60,13 @@ public:
 		_lastPos = pos;
 	}
 
+	//立即发送数据 暂时用不到
+	void SendData02(DataHeader* header)
+	{
+		SendData(header);
+		SendDataReal();
+	}
+
 	//立即将发送缓冲区的数据发送给客户端
 	int SendDataReal()
 	{
@@ -71,6 +78,8 @@ public:
 			ret = send(_sockfd, _szSendBuf, _lastSendPos, 0);
 			//数据尾部位置设置为0
 			_lastSendPos = 0;
+			_sendBuffFullCount = 0;
+			resetDtSend();
 		}
 		return ret;
 	}
@@ -85,35 +94,21 @@ public:
 
 		while (true)
 		{
-			//定量 发送数据
-			if (_lastSendPos + nSendLen >= SEND_BUFF_SIZE)
+			if (nSendLen+_lastSendPos<=SEND_BUFF_SIZE)
 			{
-				//计算可拷贝的数据长度
-				int nCopyLen = SEND_BUFF_SIZE - _lastSendPos;
-				//拷贝数据
-				memcpy(_szSendBuf + _lastSendPos, pSendData, nCopyLen);
-				//计算剩余数据位置
-				pSendData += nCopyLen;
-				//计算剩余数据长度
-				nSendLen -= nCopyLen;
-				//发送数据
-				ret = send(_sockfd, _szSendBuf, SEND_BUFF_SIZE, 0);
-				//数据尾部位置清零
-				_lastSendPos = 0;
-				//重置发送计时
-				resetDtSend();
-				//发送错误
-				if (SOCKET_ERROR == ret)
-				{
-					return ret;
-				}
-			}
-			else {
-				//将要发送的数据 拷贝到发送缓冲区尾部
+				/*将要发送的数据 拷贝发到发送缓冲区尾部*/
 				memcpy(_szSendBuf + _lastSendPos, pSendData, nSendLen);
-				//计算数据尾部位置
+				/*计算数据尾部位置*/
 				_lastSendPos += nSendLen;
-				break;
+				if (_lastSendPos==SEND_BUFF_SIZE)
+				{
+					_sendBuffFullCount++;
+				}
+				return nSendLen;
+			}
+			else
+			{
+				_sendBuffFullCount++;
 			}
 		}
 		return ret;
@@ -175,7 +170,11 @@ private:
 
 	//上次发送消息的时间
 	time_t _dtSend;
+
+	/*发送缓冲区遇到写满情况*/
+	int _sendBuffFullCount = 0;
 };
+
 
 #endif // !_CellClient_hpp_
 

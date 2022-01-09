@@ -25,6 +25,8 @@ private:
 	std::vector<CellServer*>_cellServer;
 	/*每秒消息计时*/
 	CELLTimestamp _time;
+
+	CellThread _thread;
 protected:
 	std::atomic_int _recvCount;//收到消息计数
 	std::atomic_int  _ClientCount;//客户端计数
@@ -176,6 +178,10 @@ public:
 			ser->Start();
 
 		}
+		_thread.Start(nullptr, [this](CellThread* pThread)
+			{
+				OnRun(pThread);
+			}, nullptr);
 	}
 	void Close()
 	{
@@ -192,44 +198,7 @@ public:
 		}
 
 	}
-	//处理网络消息
-	//int nCount = 0;
-	bool OnRun()
-	{
-		if (IsRun())
-		{
-			time4msg();
-			//伯克利 socket
-			fd_set fdRead;
-			//清除集合
-			FD_ZERO(&fdRead);// fd_set 共有1024bit, 全部初始化为0
-			//加入集合
-			FD_SET(_sock, &fdRead);//将参数文件描述符fd对应的标志位,设置为1
-			struct timeval _time;
-			_time.tv_sec = 0;
-			_time.tv_usec = 10;
-			//nfds 是一个整数值 是指fd_set集合中所有的描述符socket 的范围,而不是数量,
-	       //既是所有文件描述符最大值+1在windows无所谓 在linux是这样的
-			int ret = select(_sock + 1, &fdRead, 0,0, &_time);
-			if (ret < 0)
-			{
-				printf("Accept Select 任务结束1\n");
-				Close();
-				return false;
-			}
-			// 判断fd对应的标志位到底是0还是1, 返回值: fd对应的标志位的值, 0, 返回0, 1->返回1
-			//有新连接
-			//判断描述符(socket)是否在集合中
-			if (FD_ISSET(_sock, &fdRead))
-			{
-				FD_CLR(_sock, &fdRead);// 将参数文件描述符fd对应的标志位, 设置为0
-				Accept();
-				return true;
-			}
-			return true;
-		}
-		return false;
-	}
+	
 	/*是否工作中*/
 	bool IsRun() {
 		return _sock != INVALID_SOCKET;
@@ -281,6 +250,41 @@ public:
 	}
 
 private:
-
+	//处理网络消息
+	//int nCount = 0;
+	void OnRun(CellThread* pThread)
+	{
+		while(pThread->isRun())
+		{
+			time4msg();
+			//伯克利 socket
+			fd_set fdRead;
+			//清除集合
+			FD_ZERO(&fdRead);// fd_set 共有1024bit, 全部初始化为0
+			//加入集合
+			FD_SET(_sock, &fdRead);//将参数文件描述符fd对应的标志位,设置为1
+			struct timeval _time;
+			_time.tv_sec = 0;
+			_time.tv_usec = 10;
+			//nfds 是一个整数值 是指fd_set集合中所有的描述符socket 的范围,而不是数量,
+		   //既是所有文件描述符最大值+1在windows无所谓 在linux是这样的
+			int ret = select(_sock + 1, &fdRead, 0, 0, &_time);
+			if (ret < 0)
+			{
+				printf("Accept Select 任务结束1\n");
+				_thread.Exit();
+				break;
+			}
+			// 判断fd对应的标志位到底是0还是1, 返回值: fd对应的标志位的值, 0, 返回0, 1->返回1
+			//有新连接
+			//判断描述符(socket)是否在集合中
+			if (FD_ISSET(_sock, &fdRead))
+			{
+				FD_CLR(_sock, &fdRead);// 将参数文件描述符fd对应的标志位, 设置为0
+				Accept();
+				
+			}
+		}
+	}
 };
 #endif

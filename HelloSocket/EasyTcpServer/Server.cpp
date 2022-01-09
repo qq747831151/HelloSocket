@@ -51,7 +51,12 @@ public:
 			//printf("收到命令:%d 数据长度：%d username:%s password:%s\n", login->cmd, login->dataLength, login->userName, login->passWord);
 			/*忽略 判断用户名密码是否正确*/
 			LoginResult loginresult;
-			pClient->SendData(&loginresult);
+			
+			if (pClient->SendData(&loginresult) == -1) 
+			{
+				//消息发送缓冲区满了,消息没发出去
+				printf("Socket=%d SendF ull \n", pClient->Getsockfd());
+			}
 			//pCellServer->addSendTask(pClient, loginresult);
 		}
 			break;
@@ -94,15 +99,25 @@ int main()
 	server.Listen(5);
 	server.Start(4);
 
-	std::thread t1(cmdThread);
-	t1.detach();
-
-	while (g_bExit)
+//	std::thread t1(cmdThread);
+//	t1.detach();
+	while (true)
 	{
-		server.OnRun();
+		char szBuf[256];
+		scanf("%s", szBuf);
+		if (0 == strcmp(szBuf, "exit"))
+		{
+			g_bExit = false;
+			printf("退出cmdThread\n");
+			break;
+		}
+		else
+		{
+			printf("不支持命令\n");
+		}
 	}
 	server.Close();
-	
+	printf("客户端已退出,任务结束.\n");
 	while (true)
 	{
 		Sleep(1);

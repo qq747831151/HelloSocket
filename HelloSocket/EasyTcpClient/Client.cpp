@@ -21,7 +21,7 @@ void cmdThread()
 		}
 	}
 }
-const int Count = 1000;//客户端数量
+const int Count = 10;//客户端数量
 const int tCount = 4;//线程数量
 EasyTcpClient* clients[Count];
 
@@ -29,10 +29,12 @@ std::atomic_int sendCount = 0;
 std::atomic_int readyCount = 0;
 void recvThread(int begin, int end)
 {
+	CELLTimestamp t;
 	while (g_bExit)
 	{
 		for (int n = begin; n < end; n++)
 		{
+			
 			clients[n]->OnRun();
 		}
 	}
@@ -80,14 +82,13 @@ void SendThread(int id)
 	{
 		for (int i = begin; i < end; i++)
 		{
-			//if (!isSend)
-			//{
+			
 				if (clients[i]->SendData(login, nlen) != -1) {
 					sendCount++;
 				}
-				//isSend = true;
-			//}
-			
+			    /*延迟*/
+				std::chrono::milliseconds t(100);//3000毫秒=3秒
+				std::this_thread::sleep_for(t);
 			
 		}
 

@@ -27,10 +27,10 @@
 //
 #include<stdio.h>
 
-//缓冲区最小单元大小
+//缓冲区最小单元大小 10240是10k
 #ifndef RECV_BUFF_SIZE
-#define RECV_BUFF_SIZE 10240
-#define SEND_BUFF_SIZE RECV_BUFF_SIZE
+#define RECV_BUFF_SIZE 8192
+#define SEND_BUFF_SIZE 10240
 #endif // !RECV_BUFF_SZIE
 
 #endif // !_CELL_HPP

@@ -52,24 +52,13 @@ public:
 
 	{
 		printf("CellServer%d.~Close1\n", _id);
-		if (_isRun)
-		{
-			_taskServer.Close();
-			_isRun = false;
-			_sem.wait();
-		}
+		_taskServer.Close();
+		_thread.Close();
 		printf("CellServer%d.~Close2\n", _id);
 	}
-	//处理网络消息
-	//备份客户socket fd_set
-	fd_set _fdRead_bak;
-	//客户列表是否有变化
-	bool _clients_change;
-	SOCKET _maxSock;
-	void OnRun()
+	void OnRun(CellThread*pThread)
 	{
-		//_clients_change = true;
-		while (_isRun)
+		while (pThread->isRun())
 		{
 			if (!_clientsBuff.empty())
 			{//从缓冲队列里取出客户数据
@@ -79,9 +68,7 @@ public:
 					_clients[pClient->Getsockfd()] = pClient; //将缓冲区队列的客户端信息加到正式队列中去
 					pClient->_serverID = _id;
 					if (_pNetEvent)
-					{
 						_pNetEvent->OnNetJoin(pClient);
-					}
 				}
 				_clientsBuff.clear();
 				_clients_change = true;
@@ -99,11 +86,15 @@ public:
 
 			//伯克利套接字 BSD socket
 			fd_set fdRead;//描述符（socket） 集合
-			//清理集合
-			FD_ZERO(&fdRead);
+			fd_set fdWrite; //描述符(socket)集合
+			
 			if (_clients_change)
 			{
 				_clients_change = false;
+
+				//清理集合
+				FD_ZERO(&fdRead);
+				FD_ZERO(&fdWrite);
 				//将描述符（socket）加入集合
 				_maxSock = _clients.begin()->second->Getsockfd();
 				for (auto iter : _clients)
@@ -119,22 +110,22 @@ public:
 			else {
 				memcpy(&fdRead, &_fdRead_bak, sizeof(fd_set));
 			}
-
+			memcpy(&fdWrite, &_fdRead_bak, sizeof(fd_set));
 			///nfds 是一个整数值 是指fd_set集合中所有描述符(socket)的范围，而不是数量
 			///既是所有文件描述符最大值+1 在Windows中这个参数可以写0
-			int ret = select(_maxSock + 1, &fdRead, nullptr, nullptr, nullptr);
+			timeval t{ 0,1 };
+			int ret = select(_maxSock + 1, &fdRead, nullptr, nullptr, &t);
 			if (ret < 0)
 			{
 				printf("select任务结束。\n");
-				Close();
-				return;
+				pThread->Exit();
+				break;
 			}
 			ReadData(fdRead);
+			WriteData(fdWrite);
 			CheckTime();
 		}
 		printf("CellServer%d.OnRun\n", _id);
-		ClearClients();
-		_sem.wakeup();
 
 	}
 
@@ -163,12 +154,18 @@ public:
 				_clients.erase(iterOld);
 				continue;
 			}
-			//定时发送检测
-			iter->second->checkSend(dt);
+			//定时发送检测 现在由于发送的数据量比较大 不需要用到定时
+			//iter->second->checkSend(dt);
 			iter++;
 		}
 	}
-
+	void OnClientLeave(CellClient*pcellClient)
+	{
+		if (_pNetEvent)
+			_pNetEvent->OnNetLeave(pcellClient);
+		_clients_change = true;
+		delete pcellClient;
+	}
 	/*读出数据*/
 	void ReadData(fd_set& fdRead)
 	{
@@ -181,10 +178,7 @@ public:
 			{
 				if (-1==RecvData(iter->second))
 				{
-					if (_pNetEvent)
-						_pNetEvent->OnNetLeave(iter->second);
-					_clients_change = true;
-					delete iter->second;
+					OnClientLeave(iter->second);
 					_clients.erase(iter);
 				}
 			}
@@ -194,31 +188,62 @@ public:
 
 		}
 #else
-std::vector<CellClient*> temp;
-			for (auto iter : _clients)
+		for (auto iter = _clients.begin(); iter != _clients.end(); )
+		{
+			if (FD_ISSET(iter->second->Getsockfd(), &fdRead))
 			{
-				if (FD_ISSET(iter.second->Getsockfd(), &fdRead))
+				if (-1 == iter->second->SendDataReal())
 				{
-					if (-1 == RecvData(iter.second))
-					{
-						if (_pNetEvent)
-							_pNetEvent->OnNetLeave(iter.second);
-						_clients_change = true;
-						temp.push_back(iter.second);
-					}
+					OnClientLeave(iter->second);
+					auto iterOld = iter;
+					iter++;
+					_clients.erase(iterOld);
+					continue;
 				}
 			}
-			for (auto pClient : temp)
+			iter++;
+		}
+#endif
+	}
+	void WriteData(fd_set&fdWrite)
+	{
+#ifdef _WIN32
+		// 在windows中 fd_read.fd_count 认为是保留发生事件的socket的数量
+		for (int n = 0; n < fdWrite.fd_count; n++)
+		{
+			auto iter = _clients.find(fdWrite.fd_array[n]);
+			if (iter != _clients.end())
 			{
-				_clients.erase(pClient->Getsockfd());
-				delete pClient;
+				if (-1 == iter->second->SendDataReal())
+				{
+					OnClientLeave(iter->second);
+					_clients.erase(iter);
+				}
 			}
+
+		}
+#else
+		for (auto iter = _clients.begin(); iter != _clients.end(); )
+		{
+			if (FD_ISSET(iter->second->Getsockfd(), &fdWrite))
+			{
+				if (-1 == iter->second->SendDataReal())
+				{
+					OnClientLeave(iter->second);
+					auto iterOld = iter;
+					iter++;
+					_clients.erase(iterOld);
+					continue;
+				}
+			}
+			iter++;
+		}
 #endif
 	}
 	//接收数据 处理粘包 拆分包
 	int RecvData(CellClient* pClient)
 	{
-
+		
 		//接收客户端数据
 		char* szRecv = pClient->GetmsgBuf() + pClient->GetLastPos();
 		//数据存到szRecv中     第三个参数是可接收数据的最大长度
@@ -275,13 +300,14 @@ std::vector<CellClient*> temp;
 
 	void Start()
 	{
-		if (!_isRun)
-		{
-			_isRun = true;
-			std::thread t1 = std::thread(std::mem_fn(&CellServer::OnRun), this);
-			t1.detach();
-			_taskServer.Start();
-		}
+		_taskServer.Start();
+		_thread.Start(nullptr, [this](CellThread* pThread)
+			{
+				OnRun(pThread);
+			}, [this](CellThread* pThread)
+			{
+				ClearClients();
+			});
 		
 	}
 
@@ -304,22 +330,21 @@ private:
 
 
 	//备份客户socket fd_set
-	fd_set fdRead_bak;//优化的地方
+	fd_set _fdRead_bak;//优化的地方
 	//
 	SOCKET maxSock;
 
 	//旧的时间戳
 	time_t _old_time = CELLTime::getNowInMilliSec();
+
+	//
+	CellThread _thread;
 	//
 	int _id = -1;
-
-	//客户列表是否有变化
-	bool _client_change = true;//优化的地方
-
-	/*是否工作中*/
-	bool _isRun = false;
 	//
-	CellSemaphore _sem;
+	SOCKET _maxSock;
+	//客户列表是否有变化
+	bool _clients_change = true;//优化的地方
 };
 
 #endif // !_CELL_SERVER_HPP_
