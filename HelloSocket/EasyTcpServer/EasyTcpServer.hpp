@@ -53,6 +53,16 @@ public:
 		WSAStartup(ver, &dat);//动态库需要写上那个lib
 #endif
 
+#ifndef _WIN32
+//忽略异常信号 ,默认情况会导致进程终止
+		signal(SIGPIPE, SIG_IGN);
+		/*if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+		{
+			return (1);
+		}*/
+#else
+		//signal(SIGPIPE,SIG_IGN)；
+#endif 
 		if (_sock!=INVALID_SOCKET)
 		{
 			printf("<Socket=%d>关闭之前的旧链接\n", _sock);
