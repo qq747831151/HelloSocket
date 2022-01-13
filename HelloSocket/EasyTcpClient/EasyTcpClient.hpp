@@ -123,7 +123,7 @@ public:
 			FD_SET(_sock, &fdRead);
 			 timeval _time;
 			_time.tv_sec = 0;
-			_time.tv_usec = 0;
+			_time.tv_usec = 1;
 			int ret = select(_sock + 1, &fdRead, 0, 0, &_time);
 			if (ret < 0)
 			{

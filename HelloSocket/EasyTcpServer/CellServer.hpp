@@ -6,6 +6,7 @@
 #include"INetEvent.hpp"
 #include"CellClient.hpp"
 #include "CellSemaphore.hpp"
+
 #include<vector>
 #include<map>
 //网络消息接收处理服务类
@@ -80,7 +81,7 @@ public:
 				std::chrono::milliseconds t(1);
 				std::this_thread::sleep_for(t);
 				//旧的时间戳
-				_oldTime = CELLTime::getNowInMilliSec();
+				_old_time = CELLTime::getNowInMilliSec();
 				continue;
 			}
 
@@ -129,16 +130,13 @@ public:
 
 	}
 
-	//旧的时间戳
-	time_t _oldTime = CELLTime::getNowInMilliSec();
-
 	/*检查时间  很影响性能*/
 	void CheckTime()
 	{
 		//当前时间戳
 		auto nowTime = CELLTime::getNowInMilliSec();
-		auto dt = nowTime - _oldTime;
-		_oldTime = nowTime;
+		auto dt = nowTime - _old_time;
+		_old_time = nowTime;
 
 		for (auto iter = _clients.begin(); iter !=_clients.end();)
 		{
@@ -192,7 +190,7 @@ public:
 		{
 			if (FD_ISSET(iter->second->Getsockfd(), &fdRead))
 			{
-				if (-1 == iter->second->SendDataReal())
+				if (-1 == RecvData(iter->second))
 				{
 					OnClientLeave(iter->second);
 					auto iterOld = iter;
@@ -316,7 +314,6 @@ public:
 		return _clients.size() + _clientsBuff.size();
 	}
 private:
-	SOCKET _sock;
 	//正式客户队列
 	std::map<SOCKET, CellClient*> _clients;
 	//缓冲客户队列
@@ -331,8 +328,6 @@ private:
 
 	//备份客户socket fd_set
 	fd_set _fdRead_bak;//优化的地方
-	//
-	SOCKET maxSock;
 
 	//旧的时间戳
 	time_t _old_time = CELLTime::getNowInMilliSec();

@@ -21,7 +21,7 @@ void cmdThread()
 		}
 	}
 }
-const int Count = 10;//客户端数量
+const int Count = 5000;//客户端数量
 const int tCount = 4;//线程数量
 EasyTcpClient* clients[Count];
 
@@ -29,7 +29,6 @@ std::atomic_int sendCount = 0;
 std::atomic_int readyCount = 0;
 void recvThread(int begin, int end)
 {
-	CELLTimestamp t;
 	while (g_bExit)
 	{
 		for (int n = begin; n < end; n++)
@@ -69,15 +68,14 @@ void SendThread(int id)
 	std::thread t1(recvThread, begin, end);
 	t1.detach();//线程分离
 
-	Login login[10];
-	for (int i = 0; i < 10; i++)
+	Login login[1];
+	for (int i = 0; i < 1; i++)
 	{
 		strcpy(login[i].passWord, "123");
 		strcpy(login[i].userName, "321");
 	}
 
 	const int nlen = sizeof(login);//这个严重影响发送的包  很重要 这样就不用继续计算长度了 影响性能
-	bool isSend = false;
 	while (g_bExit)
 	{
 		for (int i = begin; i < end; i++)

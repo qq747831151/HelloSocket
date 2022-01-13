@@ -2,26 +2,7 @@
 #include "EasyTcpServer.hpp"
 #include "Alloc.h"
 #include <thread>
-bool g_bExit = true;//线程退出
-void cmdThread()
-{
-	while (true)
-	{
-		char szBuf[256];
-		scanf("%s", szBuf);
-		if (0 == strcmp(szBuf, "exit"))
-		{
-			g_bExit = false;
-			printf("退出cmdThread\n");
-			break;
-		}
-		else
-		{
-			printf("不支持命令\n");
-		}
 
-	}
-}
 class MyServer :public EasyTcpServer
 {
 public:
@@ -96,18 +77,16 @@ int main()
 	MyServer server;
 	server.InitSocket();
 	server.Bind(nullptr, 4567);
-	server.Listen(5);
+	server.Listen(64);
 	server.Start(4);
 
-//	std::thread t1(cmdThread);
-//	t1.detach();
+
 	while (true)
 	{
 		char szBuf[256];
 		scanf("%s", szBuf);
 		if (0 == strcmp(szBuf, "exit"))
 		{
-			g_bExit = false;
 			printf("退出cmdThread\n");
 			break;
 		}
@@ -116,12 +95,11 @@ int main()
 			printf("不支持命令\n");
 		}
 	}
-	server.Close();
-	printf("客户端已退出,任务结束.\n");
+	printf("exit.\n");
+#ifdef _WIN32
 	while (true)
-	{
-		Sleep(1);
-	}
+		Sleep(10);
+#endif
 	return 0;
 
 }

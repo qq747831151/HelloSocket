@@ -7,12 +7,7 @@
 #include "CellServer.hpp"
 #include "INetEvent.hpp"
 #include "CEllObjectPool.hpp"
-//#include <stdio.h>
-//#include <stdlib.h>
 
-//#include"CELLTimestamp.hpp"
-//#include "CellTask.hpp"
-//#include "MessAgeHeader.hpp"
 #include <thread>
 #include <mutex>
 #include <atomic>
@@ -174,13 +169,12 @@ public:
 			}
 		}
 		pMinServer->addClient(pClient);
-		OnNetJoin(pClient);
 	}
 	void Start(int nCellServerCount)
 	{
 		for (int i = 0; i < nCellServerCount; i++)
 		{
-			auto ser = new CellServer(_sock);
+			auto ser = new CellServer(i+1);
 			_cellServer.push_back(ser);
 			/*注册网络事件的接受对象*/
 			ser->SetEventObj(this);
@@ -195,8 +189,14 @@ public:
 	}
 	void Close()
 	{
+		_thread.Close();
 		if (_sock!=INVALID_SOCKET)
 		{
+			for (auto s :_cellServer)
+			{
+				delete s;
+			}
+			_cellServer.clear();
 #ifdef _WIN32
 			//8 关闭套接字
 			closesocket(_sock);
@@ -205,30 +205,11 @@ public:
 			//8 关闭套接字
 			close(_sock);
 #endif
+			_sock = INVALID_SOCKET;
 		}
 
 	}
 	
-	/*是否工作中*/
-	bool IsRun() {
-		return _sock != INVALID_SOCKET;
-	}
-	 /*计算并输出每秒收到的网络消息*/
-	virtual void time4msg()
-	{
-		
-		auto t1 = _time.getElapsedSecond();
-		if (t1 >= 1.0)
-		{
-			
-			
-			printf("thread<%d> time=%lf socket<%d> recv<%d> RecvCount=%d\n", _cellServer.size(), t1, _sock, (int)(_recvCount/ t1),(int)(_MsgCount/t1));;
-			_recvCount = 0;
-			_MsgCount = 0;
-			_time.update();
-		}
-		
-	}
 	//发送单发指定的Socket
 	/*int SendData(DataHeader*header,SOCKET clientSock)
 	{
@@ -295,6 +276,20 @@ private:
 				
 			}
 		}
+	}
+	/*计算并输出每秒收到的网络消息*/
+	virtual void time4msg()
+	{
+
+		auto t1 = _time.getElapsedSecond();
+		if (t1 >= 1.0)
+		{
+			printf("thread<%d> time=%lf socket<%d> recv<%d> RecvCount=%d\n", _cellServer.size(), t1, _sock, (int)(_recvCount / t1), (int)(_MsgCount / t1));;
+			_recvCount = 0;
+			_MsgCount = 0;
+			_time.update();
+		}
+
 	}
 };
 #endif

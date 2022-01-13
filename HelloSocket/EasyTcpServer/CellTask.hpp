@@ -78,11 +78,7 @@ protected:
 			//清空任务
 			_tasks.clear();
 		}
-		//处理缓冲队列中的任务
-		for (auto pTask : _tasksBuf)
-		{
-			pTask();
-		}
+		
 		printf("CellTaskServer%d.OnRun\n", _serverID);
 
 	}

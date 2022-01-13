@@ -14,6 +14,9 @@
 class CellClient
 {
 public:
+	int _ID = -1;
+	int _serverID = -1;
+public:
 	CellClient(SOCKET sockfd = INVALID_SOCKET)
 	{
 		static int n = 1;
@@ -70,15 +73,17 @@ public:
 	//立即将发送缓冲区的数据发送给客户端
 	int SendDataReal()
 	{
-		int ret = SOCKET_ERROR;
+		int ret = 0;
 		//缓冲区有数据
-		if (_lastSendPos>0&&SOCKET_ERROR!=_sockfd)
+		if (_lastSendPos>0&&INVALID_SOCKET!=_sockfd)
 		{
 			//发送数据
 			ret = send(_sockfd, _szSendBuf, _lastSendPos, 0);
 			//数据尾部位置设置为0
 			_lastSendPos = 0;
+			//
 			_sendBuffFullCount = 0;
+			//
 			resetDtSend();
 		}
 		return ret;
@@ -91,10 +96,7 @@ public:
 		int nSendLen = header->dataLength;
 		//要发送的数据
 		const char* pSendData = (const char*)header;
-
-		while (true)
-		{
-			if (nSendLen+_lastSendPos<=SEND_BUFF_SIZE)
+		if (nSendLen+_lastSendPos<=SEND_BUFF_SIZE)
 			{
 				/*将要发送的数据 拷贝发到发送缓冲区尾部*/
 				memcpy(_szSendBuf + _lastSendPos, pSendData, nSendLen);
@@ -110,7 +112,6 @@ public:
 			{
 				_sendBuffFullCount++;
 			}
-		}
 		return ret;
 	}
 	/*将心跳检测重置为0*/
@@ -149,9 +150,6 @@ public:
 		return false;
 
 	}
-public:
-	int _ID = -1;
-	int _serverID = -1;
 private:
 	// socket fd_set  file desc set
 	SOCKET _sockfd;
