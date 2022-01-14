@@ -1,5 +1,6 @@
 ﻿
 #include "EasyTcpServer.hpp"
+#include "CellLog.hpp"
 #include "Alloc.h"
 #include <thread>
 
@@ -29,21 +30,21 @@ public:
 			pClient->resetDtHeart();
 
 			Login* login = (Login*)header;
-			//printf("收到命令:%d 数据长度：%d username:%s password:%s\n", login->cmd, login->dataLength, login->userName, login->passWord);
+			//CellLog::Info("收到命令:%d 数据长度：%d username:%s password:%s\n", login->cmd, login->dataLength, login->userName, login->passWord);
 			/*忽略 判断用户名密码是否正确*/
 			LoginResult loginresult;
 			
 			if (pClient->SendData(&loginresult) == -1) 
 			{
 				//消息发送缓冲区满了,消息没发出去
-				printf("Socket=%d SendF ull \n", pClient->Getsockfd());
+				CellLog::Info("Socket=%d SendF ull \n", pClient->Getsockfd());
 			}
 			//pCellServer->addSendTask(pClient, loginresult);
 		}
 			break;
 		case CMD_LOGINOUT: {
 			LoginOut* loginout = (LoginOut*)header;
-			//printf("收到命令:%d 数据长度：%d username:%s password:%s\n", loginout->cmd, loginout->dataLength, loginout->userName);
+			//CellLog::Info("收到命令:%d 数据长度：%d username:%s password:%s\n", loginout->cmd, loginout->dataLength, loginout->userName);
 			/*忽略 判断用户名密码是否正确*/
 		//	LoginOutResult loginOutresult;
 			//pClient->SendData(&loginOutresult);
@@ -60,7 +61,7 @@ public:
 		}
 		break;
 		default:
-			printf("<socket=%d>收到未定义消息 数据长度：%d \n", pClient->Getsockfd(), header->dataLength);
+			CellLog::Info("<socket=%d>收到未定义消息 数据长度：%d \n", pClient->Getsockfd(), header->dataLength);
 			//DataHeader dp;
 			//SendData(&dp, _clientSock);
 			break;
@@ -73,7 +74,7 @@ public:
 };
 int main()
 {
-
+	CellLog::Instance().setLogPath("serverLog.txt", "w");
 	MyServer server;
 	server.InitSocket();
 	server.Bind(nullptr, 4567);
@@ -87,15 +88,15 @@ int main()
 		scanf("%s", szBuf);
 		if (0 == strcmp(szBuf, "exit"))
 		{
-			printf("退出cmdThread\n");
+			CellLog::Info("退出cmdThread\n");
 			break;
 		}
 		else
 		{
-			printf("不支持命令\n");
+			CellLog::Info("不支持命令\n");
 		}
 	}
-	printf("exit.\n");
+	CellLog::Info("exit.\n");
 #ifdef _WIN32
 	while (true)
 		Sleep(10);

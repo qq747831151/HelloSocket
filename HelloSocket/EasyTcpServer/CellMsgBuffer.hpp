@@ -1,5 +1,6 @@
 #ifndef _CELLBUFFER_HPP_
 #define  _CELLBUFFER_HPP_
+#include "CellLog.hpp"
 #include "Cell.hpp"
 class CellMsgBuffer
 {
@@ -24,6 +25,23 @@ public:
 	/*入栈*/
 	bool push(const char*pData,int nLen)
 	{
+		//写入大量数据不一定要放到内存中
+		//也可以存储到数据库或者磁盘等存储器
+		//if (nLen + _nlast > _nSize)
+		//{
+		//	//需要写入的数据大于可用的空间
+		//	int n = (_nlast + nLen) - _nSize;
+		//	/*拓展Buff*/
+		//	if (n < 8192)
+		//	{
+		//		n = 8192;
+		//		char* buff = new char[_nSize + n];
+		//		memcpy(buff, _pBuff, _nlast);
+		//		delete _pBuff;
+		//		_pBuff = buff;
+		//	}
+		//}
+
 		if (nLen+_nlast<=_nSize)
 		{
 			/*将要发送的数据 拷贝到发送缓冲区尾部*/
@@ -86,6 +104,7 @@ public:
 			int nlen = (int)recv(sockfd, szRecv, _nSize - _nlast, 0);//返回值是接收的长度  revcz在mac返回值是long 建议强转int
 			if (nlen<=0)
 			{
+				CellLog::Info("客户端<socket=%d>已退出，任务结束3\n", sockfd);
 				return nlen;
 			}
 		//消息缓冲区的数据尾部尾部位置后移
@@ -114,11 +133,13 @@ private:
 	//第二缓冲区 发送缓冲区
 	char* _pBuff = nullptr;
 	////消息缓冲的数据尾部位置,已有数据长度
+	/*可以用链表或者队列来管理缓冲区数据块*/
+	//list<char*>_pBuffList;
 	int _nlast = 0;;
 	//缓冲区总的空间大小,字节长度
 	int _nSize = 0;;
 	//缓冲区写满次数计数
-	int _BuffFullCount = 0;;
+	int _BuffFullCount = 0;
 };
 
 #endif

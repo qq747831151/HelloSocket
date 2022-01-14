@@ -1,3 +1,7 @@
+#ifndef SHOWWAVE_H
+#define SHOWWAVE_H 
+#endif
+
 #ifndef _CELL_TASK_H_
 #define _CELL_TASK_H_
 
@@ -42,9 +46,9 @@ public:
 	}
 	void Close()
 	{
-		printf("CellTaskServer%d.Close1\n", _serverID);
+		//CellLog::Info("CellTaskServer%d.Close1\n", _serverID);
 		_thread.Close();
-		printf("CellTaskServer%d.Close2\n", _serverID);
+		//CellLog::Info("CellTaskServer%d.Close2\n", _serverID);
 	}
 protected:
 	//工作函数
@@ -78,8 +82,13 @@ protected:
 			//清空任务
 			_tasks.clear();
 		}
-		
-		printf("CellTaskServer%d.OnRun\n", _serverID);
+		//处理缓冲队列中任务
+		for (auto pTask : _tasksBuf)
+		{
+			pTask();
+
+		}
+		//CellLog::Info("CellTaskServer%d.OnRun\n", _serverID);
 
 	}
 };

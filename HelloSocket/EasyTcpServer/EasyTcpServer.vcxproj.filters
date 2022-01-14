@@ -65,5 +65,11 @@
     <ClInclude Include="CellMsgBuffer.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="CellLog.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CellNetWork.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

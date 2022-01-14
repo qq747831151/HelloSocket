@@ -6,7 +6,6 @@
 #include"INetEvent.hpp"
 #include"CellClient.hpp"
 #include "CellSemaphore.hpp"
-
 #include<vector>
 #include<map>
 //网络消息接收处理服务类
@@ -38,9 +37,9 @@ public:
 
 	~CellServer()
 	{
-		printf("CellServer%d.~CellServer1\n", _id);
+		CellLog::Info("CellServer%d.~CellServer1\n", _id);
 		Close();
-		printf("CellServer%d.~CellServer2\n", _id);
+		CellLog::Info("CellServer%d.~CellServer2\n", _id);
 	}
 
 	void SetEventObj(INetEvent* event)
@@ -52,10 +51,10 @@ public:
 	void Close()
 
 	{
-		printf("CellServer%d.~Close1\n", _id);
+		CellLog::Info("CellServer%d.~Close1\n", _id);
 		_taskServer.Close();
 		_thread.Close();
-		printf("CellServer%d.~Close2\n", _id);
+		CellLog::Info("CellServer%d.~Close2\n", _id);
 	}
 	void OnRun(CellThread*pThread)
 	{
@@ -118,7 +117,7 @@ public:
 			int ret = select(_maxSock + 1, &fdRead, nullptr, nullptr, &t);
 			if (ret < 0)
 			{
-				printf("select任务结束。\n");
+				CellLog::Info("select任务结束。\n");
 				pThread->Exit();
 				break;
 			}
@@ -126,7 +125,7 @@ public:
 			WriteData(fdWrite);
 			CheckTime();
 		}
-		printf("CellServer%d.OnRun\n", _id);
+		CellLog::Info("CellServer%d.OnRun\n", _id);
 
 	}
 
@@ -181,7 +180,7 @@ public:
 				}
 			}
 			else {
-				printf("error. if (iter != _clients.end())\n");
+				CellLog::Info("error. if (iter != _clients.end())\n");
 			}
 
 		}
@@ -247,7 +246,7 @@ public:
 	
 		if (nLen <= 0)
 		{
-			//printf("客户端<Socket=%d>已退出，任务结束。\n", pClient->sockfd());
+			//CellLog::Info("客户端<Socket=%d>已退出，任务结束。\n", pClient->sockfd());
 			return -1;
 		}
 		/*触发<接收网络数据>事件*/

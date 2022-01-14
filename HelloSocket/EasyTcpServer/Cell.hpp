@@ -25,6 +25,7 @@
 #include"MessageHeader.hpp"
 #include"CELLTimestamp.hpp"
 #include"CellTask.hpp"
+#include "CellLog.hpp"
 //
 #include<stdio.h>
 

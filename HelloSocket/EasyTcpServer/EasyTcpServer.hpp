@@ -7,7 +7,8 @@
 #include "CellServer.hpp"
 #include "INetEvent.hpp"
 #include "CEllObjectPool.hpp"
-
+#include "CellLog.hpp"
+#include "CellNetWork.hpp"
 #include <thread>
 #include <mutex>
 #include <atomic>
@@ -41,37 +42,21 @@ public:
 	//初始化
 	SOCKET InitSocket()
 	{
-#ifdef _WIN32
-		/*启动socket网络环境 2.x环境*/
-		WORD ver = MAKEWORD(2, 2);//版本号
-		WSADATA dat;
-		WSAStartup(ver, &dat);//动态库需要写上那个lib
-#endif
-
-#ifndef _WIN32
-//忽略异常信号 ,默认情况会导致进程终止
-		signal(SIGPIPE, SIG_IGN);
-		/*if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
-		{
-			return (1);
-		}*/
-#else
-		//signal(SIGPIPE,SIG_IGN)；
-#endif 
+		CellNetWork::Init();
 		if (_sock!=INVALID_SOCKET)
 		{
-			printf("<Socket=%d>关闭之前的旧链接\n", _sock);
+			CellLog::Info("<Socket=%d>关闭之前的旧链接\n", _sock);
 			Close();
 		}
 	//1.建立Socket API 建立简易TC服务端
 		_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		if (_sock == INVALID_SOCKET)
 		{
-			printf("ERROR,<socket=%d>建立socket失败...\n", _sock);
+			CellLog::Info("ERROR,<socket=%d>建立socket失败...\n", _sock);
 		}
 		else
 		{
-			printf("TURE,<socket=%d>建立socket成功.....\n", _sock);
+			CellLog::Info("TURE,<socket=%d>建立socket成功.....\n", _sock);
 		}
 		return _sock;
 	}
@@ -109,11 +94,11 @@ public:
 		int ret = bind(_sock, (struct sockaddr*)&_sin, sizeof(_sin));
 		if (ret == SOCKET_ERROR)
 		{
-			printf("ERROR,绑定用于接受客户端连接的网络端口失败...\n");
+			CellLog::Info("ERROR,绑定用于接受客户端连接的网络端口失败...\n");
 		}
 		else
 		{
-			printf("TURE,绑定用于接受客户端连接的网络端口成功.....\n");
+			CellLog::Info("TURE,绑定用于接受客户端连接的网络端口成功.....\n");
 		}
 		return ret;
 	}
@@ -124,11 +109,11 @@ public:
 		int ret = listen(_sock, n);
 		if (ret == SOCKET_ERROR)
 		{
-			printf("ERROR,监听网络端口失败...\n");
+			CellLog::Info("ERROR,监听网络端口失败...\n");
 		}
 		else
 		{
-			printf("TURE,监听网络端口成功.....\n");
+			CellLog::Info("TURE,监听网络端口成功.....\n");
 		}
 		return ret;
 	}
@@ -146,7 +131,7 @@ public:
 #endif
 		if (_cSock==INVALID_SOCKET)
 		{
-			printf("ERROR,等待接收客户端连接失败\n");
+			CellLog::Info("ERROR,等待接收客户端连接失败\n");
 		}
 		else
 		{
@@ -262,7 +247,7 @@ private:
 			int ret = select(_sock + 1, &fdRead, 0, 0, &_time);
 			if (ret < 0)
 			{
-				printf("Accept Select 任务结束1\n");
+				CellLog::Info("Accept Select 任务结束1\n");
 				_thread.Exit();
 				break;
 			}
@@ -284,7 +269,7 @@ private:
 		auto t1 = _time.getElapsedSecond();
 		if (t1 >= 1.0)
 		{
-			printf("thread<%d> time=%lf socket<%d> recv<%d> RecvCount=%d\n", _cellServer.size(), t1, _sock, (int)(_recvCount / t1), (int)(_MsgCount / t1));;
+			CellLog::Info("thread<%d> time=%lf socket<%d> recv<%d> RecvCount=%d\n", _cellServer.size(), t1, _sock, (int)(_recvCount / t1), (int)(_MsgCount / t1));;
 			_recvCount = 0;
 			_MsgCount = 0;
 			_time.update();

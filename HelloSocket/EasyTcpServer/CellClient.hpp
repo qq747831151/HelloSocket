@@ -3,6 +3,7 @@
 
 #include"Cell.hpp"
 #include "CellMsgBuffer.hpp"
+#include "CellLog.hpp"
 
 //客户端心跳检测死亡计时时间 60000毫秒=60秒钟
 #define  CLIENT_HEARY_DEAD_TIME 60000
@@ -27,7 +28,7 @@ public:
 	}
 	~CellClient()
 	{
-		printf("s=%d CellClient%d.~CellClient\n", _serverID, _ID);
+		CellLog::Info("s=%d CellClient%d.~CellClient\n", _serverID, _ID);
 		if (_sockfd != INVALID_SOCKET)
 		{
 #ifdef _WIN32
@@ -106,7 +107,7 @@ public:
 		_dtHeart += dt;
 		if (_dtHeart>=CLIENT_HEARY_DEAD_TIME)
 		{
-			printf("checkHeart dead=%d,time=%d\n", _sockfd, _dtHeart);
+			CellLog::Info("checkHeart dead=%d,time=%d\n", _sockfd, _dtHeart);
 			return true;
 		}
 		return false;
@@ -117,6 +118,7 @@ public:
 		_dtSend += dt;
 		if (_dtSend>=CLIENT_SEND_BUFF_TIME)
 		{
+			//CellLog::Info("checkSend dead=%d,time=%d\n", _sockfd, _dtSend);
 			//立即将发送缓冲区的数据发送出去
 			SendDataReal();
 			//重置发送计时
