@@ -18,58 +18,5 @@
     <ClCompile Include="Server.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Alloc.cpp">
-      <Filter>头文件</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="EasyTcpServer.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="MessAgeHeader.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="CELLTimestamp.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="CellTask.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Alloc.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="MemoryMgr.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Cell.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="CellClient.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="CellServer.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="INetEvent.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="CEllObjectPool.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="CellSemaphore.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="CellThread.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="CellMsgBuffer.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="CellLog.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="CellNetWork.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>
