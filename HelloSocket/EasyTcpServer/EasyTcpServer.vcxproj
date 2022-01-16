@@ -157,10 +157,12 @@
     <ClInclude Include="..\depend\Include\CellClient.hpp" />
     <ClInclude Include="..\depend\Include\CellLog.hpp" />
     <ClInclude Include="..\depend\Include\CellMsgBuffer.hpp" />
+    <ClInclude Include="..\depend\Include\CellMsgStream.hpp" />
     <ClInclude Include="..\depend\Include\CellNetWork.hpp" />
     <ClInclude Include="..\depend\Include\CEllObjectPool.hpp" />
     <ClInclude Include="..\depend\Include\CellSemaphore.hpp" />
     <ClInclude Include="..\depend\Include\CellServer.hpp" />
+    <ClInclude Include="..\depend\Include\CellStream.hpp" />
     <ClInclude Include="..\depend\Include\CellTask.hpp" />
     <ClInclude Include="..\depend\Include\CellThread.hpp" />
     <ClInclude Include="..\depend\Include\CELLTimestamp.hpp" />

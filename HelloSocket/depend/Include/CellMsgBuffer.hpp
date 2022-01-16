@@ -122,6 +122,17 @@ public:
 		{
 			//这时就可以知道当前消息的长度
 			DataHeader* header = (DataHeader*)_pBuff;
+
+			/*这边是因为字节流这块 _pBuff里面的cmd和dataLength的数据对换了 现在还不知道哪里错了 暂时这么改*/
+			if (header->cmd > header->dataLength)
+			{
+				DataHeader header1;
+				header1.cmd = header->dataLength;
+				header1.dataLength = header->cmd;
+				header->cmd = header1.cmd;
+				header->dataLength = header1.dataLength;
+			}
+
 			//判断消息缓冲区的数据长度大于消息长度
 			return _nLast >= header->dataLength;
 		}

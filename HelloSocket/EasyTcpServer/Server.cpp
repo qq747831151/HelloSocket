@@ -1,6 +1,6 @@
 ﻿#include "EasyTcpServer.hpp"
 #include<thread>
-
+#include "CellMsgStream.hpp"
 class MyServer : public EasyTcpServer
 {
 public:
@@ -43,11 +43,46 @@ public:
 		break;
 		case CMD_LOGINOUT:
 		{
-			LoginOut* logout = (LoginOut*)header;
+			//LoginOut* logout = (LoginOut*)header;
 			//CELLLog::Info("recv <Socket=%d> msgType：CMD_LOGOUT, dataLen：%d,userName=%s \n", cSock, logout->dataLength, logout->userName);
 			//忽略判断用户密码是否正确的过程
 			//netmsg_LogoutR ret;
 			//SendData(cSock, &ret);
+
+			CellReadStream r(header);
+			//读取消息长度
+			r.ReadInt16();
+			//读取消息命令
+			r.getNetCmd();
+			auto n1 = r.ReadInt8();
+			auto n2 = r.ReadInt16();
+			auto n3 = r.ReadInt32();
+			auto n4 = r.ReadFloat();
+			auto n5 = r.ReadDouble();
+			char name[32] = {};
+			auto n6 = r.ReadArray(name, 32);
+			char pw[32] = {};
+			auto n7 = r.ReadArray(pw, 32);
+			int ata[10] = {};
+			auto n8 = r.ReadArray(ata, 10);
+
+			///
+
+			CellWriteStream CS;
+			CS.setNetCmd(CMD_LOGINOUT_RESULT);
+			CS.WriteInt8(4);
+			CS.WriteInt16(5);
+			CS.WriteInt32(6);
+			CS.WriteFloat(7.0f);
+			CS.WriteDouble(8.0);
+			const char* str = "server";
+			CS.WriteArray(str, strlen(str));
+			const char* str1 = "hahaha";
+			CS.WriteArray(str1, strlen(str1));
+			int b[] = { 1,2,3,4,5 };
+			CS.WriteArray(b, 5);
+			CS.finsh();
+			pClient->SendData(CS.Data(), CS.length());
 		}
 		break;
 		case CMD_C2S_HEART:

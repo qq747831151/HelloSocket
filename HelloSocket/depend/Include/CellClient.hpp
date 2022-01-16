@@ -17,7 +17,7 @@ public:
 	//所属serverid
 	int serverId = -1;
 public:
-	CellClient(SOCKET sockfd = INVALID_SOCKET) :
+	CellClient(SOCKET sockfd = INVALID_SOCKET,int sendSize = SEND_BUFF_SIZE, int recvSize = RECV_BUFF_SIZE) :
 		_sendBuff(SEND_BUFF_SIZE),
 		_recvBuff(RECV_BUFF_SIZE)
 	{
@@ -91,6 +91,14 @@ public:
 			return header->dataLength;
 		}
 		return SOCKET_ERROR;
+	}
+	int SendData(const char *pData,int len)
+	{
+		if (_sendBuff.push(pData,len))
+		{
+			return len;
+		}
+		return -1;
 	}
 	/*将心跳检测重置为0*/
 	void resetDTHeart()

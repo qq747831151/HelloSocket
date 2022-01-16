@@ -74,5 +74,11 @@
     <ClInclude Include="..\depend\Include\MessAgeHeader.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\depend\Include\CellMsgStream.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\depend\Include\CellStream.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

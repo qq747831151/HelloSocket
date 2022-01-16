@@ -5,6 +5,13 @@
 
 class CellThread
 {
+public:
+	static void Sleep1(time_t dt)
+	{
+		std::chrono::milliseconds t(dt);//3000∫¡√Î=3√Î
+		std::this_thread::sleep_for(t);
+	}
+
 private:
 	typedef std::function<void(CellThread*)> EventCall;
 public:
