@@ -1,16 +1,17 @@
+#ifndef _MessageHeader_hpp_
+#define _MessageHeader_hpp_
 enum CMD
 {
 	CMD_LOGIN,
-	CMD_LOGINRESULT,
+	CMD_LOGIN_RESULT,
 	CMD_LOGINOUT,
-	CMD_LOGINOUTRESULT,
-	CMD_ERROR,
+	CMD_LOGINOUT_RESULT,
 	CMD_NEW_USER_JOIN,
-	CMD_HEART_C2S,
+	CMD_C2S_HEART,
 	CMD_S2C_HEART,
+	CMD_ERROR,
 
 };
-//消息头
 struct DataHeader
 {
 	DataHeader()
@@ -18,12 +19,12 @@ struct DataHeader
 		dataLength = sizeof(DataHeader);
 		cmd = CMD_ERROR;
 	}
-	short dataLength;//数据长度
-	short cmd;//命令
-
+	unsigned short dataLength;
+	unsigned short cmd;
 };
-//登录
-struct Login :DataHeader
+
+//DataPackage
+struct Login : public DataHeader
 {
 	Login()
 	{
@@ -34,20 +35,20 @@ struct Login :DataHeader
 	char passWord[32];
 	char data[32];
 };
-//登录结果
-struct LoginResult :DataHeader
+
+struct LoginResult: public DataHeader
 {
 	LoginResult()
 	{
 		dataLength = sizeof(LoginResult);
-		cmd = CMD_LOGINRESULT;
+		cmd = CMD_LOGIN_RESULT;
 		result = 0;
 	}
 	int result;
 	char data[92];
 };
-//登出
-struct LoginOut :DataHeader
+
+struct LoginOut : public DataHeader
 {
 	LoginOut()
 	{
@@ -55,37 +56,36 @@ struct LoginOut :DataHeader
 		cmd = CMD_LOGINOUT;
 	}
 	char userName[32];
-
 };
-//登录结果
-struct LoginOutResult :DataHeader
+
+struct LoginOutResult : public DataHeader
 {
 	LoginOutResult()
 	{
 		dataLength = sizeof(LoginOutResult);
-		cmd = CMD_LOGINOUTRESULT;
+		cmd = CMD_LOGINOUT_RESULT;
 		result = 0;
 	}
 	int result;
 };
 
-//新用户加入
-struct LoginNewUser :DataHeader
+struct LoginNewUser : public DataHeader
 {
 	LoginNewUser()
 	{
 		dataLength = sizeof(LoginNewUser);
 		cmd = CMD_NEW_USER_JOIN;
-		sock = 0;
+		scok = 0;
 	}
-	int sock;
+	int scok;
 };
+
 struct netmsg_c2s_Heart : public DataHeader
 {
 	netmsg_c2s_Heart()
 	{
 		dataLength = sizeof(netmsg_c2s_Heart);
-		cmd = CMD_HEART_C2S;
+		cmd = CMD_C2S_HEART;
 	}
 };
 
@@ -97,3 +97,5 @@ struct netmsg_s2c_Heart : public DataHeader
 		cmd = CMD_S2C_HEART;
 	}
 };
+
+#endif // !_MessageHeader_hpp_

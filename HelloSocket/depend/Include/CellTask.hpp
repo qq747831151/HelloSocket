@@ -1,28 +1,25 @@
-#ifndef SHOWWAVE_H
-#define SHOWWAVE_H 
-#endif
-
 #ifndef _CELL_TASK_H_
 #define _CELL_TASK_H_
 
 #include<thread>
 #include<mutex>
 #include<list>
-#include <functional>
-#include "CellSemaphore.hpp"
-#include "CellThread.hpp"
+
+#include<functional>
+
+#include"CellThread.hpp"
 
 //执行任务的服务类型
 class CellTaskServer
 {
 public:
-	//所属serverID
-	int _serverID = -1;
+	//所属serverid
+	int serverId = -1;
 private:
 	typedef std::function<void()> CellTask;
 private:
 	//任务数据
-	 std::list<CellTask> _tasks;
+	std::list<CellTask> _tasks;
 	//任务数据缓冲区
 	std::list<CellTask> _tasksBuf;
 	//改变数据缓冲区时需要加锁
@@ -39,22 +36,22 @@ public:
 	//启动工作线程
 	void Start()
 	{
-		_thread.Start(nullptr, [this](CellThread* pThread)
-			{
-				OnRun(pThread);
+		_thread.Start(nullptr, [this](CellThread* pThread) {
+			OnRun(pThread);
 			});
 	}
+
 	void Close()
 	{
-		//CellLog::Info("CellTaskServer%d.Close1\n", _serverID);
+		///CELLLog::Info("CELLTaskServer%d.Close begin\n", serverId);
 		_thread.Close();
-		//CellLog::Info("CellTaskServer%d.Close2\n", _serverID);
+		//CELLLog::Info("CELLTaskServer%d.Close end\n", serverId);
 	}
 protected:
 	//工作函数
-	void OnRun(CellThread*pthread)
+	void OnRun(CellThread* pThread)
 	{
-		while (pthread->isRun())
+		while (pThread->isRun())
 		{
 			//从缓冲区取出数据
 			if (!_tasksBuf.empty())
@@ -77,19 +74,16 @@ protected:
 			for (auto pTask : _tasks)
 			{
 				pTask();
-				
 			}
 			//清空任务
 			_tasks.clear();
 		}
-		//处理缓冲队列中任务
+		//处理缓冲队列中的任务
 		for (auto pTask : _tasksBuf)
 		{
 			pTask();
-
 		}
-		//CellLog::Info("CellTaskServer%d.OnRun\n", _serverID);
-
+		//CELLLog::Info("CELLTaskServer%d.OnRun exit\n", serverId);
 	}
 };
 #endif // !_CELL_TASK_H_

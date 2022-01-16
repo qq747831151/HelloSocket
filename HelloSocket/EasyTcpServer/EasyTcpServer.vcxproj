@@ -148,7 +148,27 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\depend\Include\Alloc.cpp" />
     <ClCompile Include="Server.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\depend\Include\Alloc.h" />
+    <ClInclude Include="..\depend\Include\Cell.hpp" />
+    <ClInclude Include="..\depend\Include\CellClient.hpp" />
+    <ClInclude Include="..\depend\Include\CellLog.hpp" />
+    <ClInclude Include="..\depend\Include\CellMsgBuffer.hpp" />
+    <ClInclude Include="..\depend\Include\CellNetWork.hpp" />
+    <ClInclude Include="..\depend\Include\CEllObjectPool.hpp" />
+    <ClInclude Include="..\depend\Include\CellSemaphore.hpp" />
+    <ClInclude Include="..\depend\Include\CellServer.hpp" />
+    <ClInclude Include="..\depend\Include\CellTask.hpp" />
+    <ClInclude Include="..\depend\Include\CellThread.hpp" />
+    <ClInclude Include="..\depend\Include\CELLTimestamp.hpp" />
+    <ClInclude Include="..\depend\Include\EasyTcpClient.hpp" />
+    <ClInclude Include="..\depend\Include\EasyTcpServer.hpp" />
+    <ClInclude Include="..\depend\Include\INetEvent.hpp" />
+    <ClInclude Include="..\depend\Include\MemoryMgr.hpp" />
+    <ClInclude Include="..\depend\Include\MessAgeHeader.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

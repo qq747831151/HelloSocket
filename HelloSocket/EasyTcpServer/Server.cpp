@@ -1,77 +1,72 @@
-﻿
-#include "EasyTcpServer.hpp"
-#include "CellLog.hpp"
-#include "Alloc.h"
-#include <thread>
+﻿#include "EasyTcpServer.hpp"
+#include<thread>
 
-class MyServer :public EasyTcpServer
+class MyServer : public EasyTcpServer
 {
 public:
-	/*客户端加入事件*/
+
+	//cellServer 4 多个线程触发 不安全
+	//如果只开启1个cellServer就是安全的
 	virtual void OnNetJoin(CellClient* pClient)
 	{
 		EasyTcpServer::OnNetJoin(pClient);
 	}
-
-	//客户端离开事件 CellServer 4 多个线程触发不安全 如果只开启1个cellServer 就是安全的
-	virtual void OnNetLeave(CellClient*pClient)
+	//cellServer 4 多个线程触发 不安全
+	//如果只开启1个cellServer就是安全的
+	virtual void OnNetLeave(CellClient* pClient)
 	{
 		EasyTcpServer::OnNetLeave(pClient);
 	}
-	/*客户端消息事件*/
-	virtual void OnNetMsg(CellServer*pCellServer, DataHeader* header, CellClient *pClient)
+	//cellServer 4 多个线程触发 不安全
+	//如果只开启1个cellServer就是安全的
+	virtual void OnNetMsg(CellServer* pServer, CellClient* pClient, DataHeader* header)
 	{
-		EasyTcpServer::OnNetMsg(pCellServer,header, pClient);
+		EasyTcpServer::OnNetMsg(pServer, pClient, header);
 		switch (header->cmd)
 		{
-		case CMD_LOGIN: {
-
-			/*假如客户端有发送消息过来 就认为客户端有心跳了 重置计时为0*/
-			pClient->resetDtHeart();
-
-			Login* login = (Login*)header;
-			//CellLog::Info("收到命令:%d 数据长度：%d username:%s password:%s\n", login->cmd, login->dataLength, login->userName, login->passWord);
-			/*忽略 判断用户名密码是否正确*/
-			LoginResult loginresult;
-			
-			if (pClient->SendData(&loginresult) == -1) 
-			{
-				//消息发送缓冲区满了,消息没发出去
-				CellLog::Info("Socket=%d SendF ull \n", pClient->Getsockfd());
-			}
-			//pCellServer->addSendTask(pClient, loginresult);
-		}
-			break;
-		case CMD_LOGINOUT: {
-			LoginOut* loginout = (LoginOut*)header;
-			//CellLog::Info("收到命令:%d 数据长度：%d username:%s password:%s\n", loginout->cmd, loginout->dataLength, loginout->userName);
-			/*忽略 判断用户名密码是否正确*/
-		//	LoginOutResult loginOutresult;
-			//pClient->SendData(&loginOutresult);
-		}
-					  break;
-		case  CMD_HEART_C2S:
-
+		case CMD_LOGIN:
 		{
-
-			/*假如客户端有发送消息过来,就认为客户端有心跳了 重置计时为0*/
-			pClient->resetDtHeart();
+			pClient->resetDTHeart();
+			//send recv 
+			Login* login = (Login*)header;
+			//CELLLog::Info("recv <Socket=%d> msgType：CMD_LOGIN, dataLen：%d,userName=%s PassWord=%s\n", cSock, login->dataLength, login->userName, login->PassWord);
+			//忽略判断用户密码是否正确的过程
+			LoginResult ret;
+			if (SOCKET_ERROR == pClient->SendData(&ret))
+			{
+				//发送缓冲区满了，消息没发出去
+				CellLog::Info("<Socket=%d> Send Full\n", pClient->sockfd());
+			}
+			//netmsg_LoginR* ret = new netmsg_LoginR();
+			//pServer->addSendTask(pClient, ret);
+		}//接收 消息---处理 发送   生产者 数据缓冲区  消费者 
+		break;
+		case CMD_LOGINOUT:
+		{
+			LoginOut* logout = (LoginOut*)header;
+			//CELLLog::Info("recv <Socket=%d> msgType：CMD_LOGOUT, dataLen：%d,userName=%s \n", cSock, logout->dataLength, logout->userName);
+			//忽略判断用户密码是否正确的过程
+			//netmsg_LogoutR ret;
+			//SendData(cSock, &ret);
+		}
+		break;
+		case CMD_C2S_HEART:
+		{
+			pClient->resetDTHeart();
 			netmsg_s2c_Heart ret;
 			pClient->SendData(&ret);
 		}
-		break;
 		default:
-			CellLog::Info("<socket=%d>收到未定义消息 数据长度：%d \n", pClient->Getsockfd(), header->dataLength);
-			//DataHeader dp;
-			//SendData(&dp, _clientSock);
-			break;
+		{
+			CellLog::Info("recv <socket=%d> undefine msgType,dataLen：%d\n", pClient->sockfd(), header->dataLength);
+		}
+		break;
 		}
 	}
-	/*virtual void OnNetRecv(ClientScoket* pClient)
-	{
-		_recvCount++;
-	}*/
+private:
+
 };
+
 int main()
 {
 	CellLog::Instance().setLogPath("serverLog.txt", "w");
@@ -81,26 +76,25 @@ int main()
 	server.Listen(64);
 	server.Start(4);
 
-
+	//在主线程中等待用户输入命令
 	while (true)
 	{
-		char szBuf[256];
-		scanf("%s", szBuf);
-		if (0 == strcmp(szBuf, "exit"))
+		char cmdBuf[256] = {};
+		scanf("%s", cmdBuf);
+		if (0 == strcmp(cmdBuf, "exit"))
 		{
-			CellLog::Info("退出cmdThread\n");
+			server.Close();
 			break;
 		}
-		else
-		{
-			CellLog::Info("不支持命令\n");
+		else {
+			CellLog::Info("undefine cmd\n");
 		}
 	}
-	CellLog::Info("exit.\n");
-#ifdef _WIN32
-	while (true)
-		Sleep(10);
-#endif
-	return 0;
 
+	CellLog::Info("exit.\n");
+	//#ifdef _WIN32
+	//	while (true)
+	//		Sleep(10);
+	//#endif
+	return 0;
 }

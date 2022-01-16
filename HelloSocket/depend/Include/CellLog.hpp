@@ -1,106 +1,99 @@
+#ifndef _CELL_LOG_HPP_
+#define _CELL_LOG_HPP_
 
-#ifndef _CellLog_Hpp_
-#define  _CellLog_Hpp_
-#include <stdio.h>
-#include "Cell.hpp"
-#include "CellTask.hpp"
-#include <ctime>
-/*日志系统*/
+#include"Cell.hpp"
+#include"CellTask.hpp"
+#include<ctime>
 class CellLog
 {
-//Info
-//Debug
-//Warring
-//Error
-public:
+	//Info
+	//Debug
+	//Warring
+	//Error
+private:
 	CellLog()
 	{
-
 		_taskServer.Start();
 	}
+
 	~CellLog()
 	{
 		_taskServer.Close();
 		if (_logFile)
 		{
+			Info("CELLLog fclose(_logFile)\n");
 			fclose(_logFile);
 			_logFile = nullptr;
 		}
 	}
 public:
-	static CellLog& Instance() {
-		static CellLog sLog;
+	static CellLog& Instance()
+	{
+		static  CellLog sLog;
 		return sLog;
 	}
+
 	void setLogPath(const char* logPath, const char* mode)
 	{
 		if (_logFile)
 		{
-			Info("CellLog:setLogPath Fclose\n");
+			Info("CELLLog::setLogPath _logFile != nullptr\n");
 			fclose(_logFile);
 			_logFile = nullptr;
 		}
 
+
 		_logFile = fopen(logPath, mode);
 		if (_logFile)
 		{
-			Info("CellLog:setLogPath Sucess，<%s>\n", logPath);
+			Info("CELLLog::setLogPath success,<%s,%s>\n", logPath, mode);
 		}
-		else
-		{
-			Info("CellLog:setLogPath Failed，<%s>\n", logPath);
+		else {
+			Info("CELLLog::setLogPath failed,<%s,%s>\n", logPath, mode);
 		}
 	}
 
 	static void Info(const char* pStr)
 	{
-
-
 		CellLog* pLog = &Instance();
-		pLog->_taskServer.addTask([=]()
+		pLog->_taskServer.addTask([=]() {
+			if (pLog->_logFile)
 			{
-				if (pLog->_logFile)
-				{
-					/*设置一个当前时间出来*/
-					auto t = system_clock::now();
-					auto tNow = system_clock::to_time_t(t);
-					//fprintf(pLog->_logFile, "%s", ctime(&tNow));
-					std::tm* now = std::gmtime(&tNow);
-					fprintf(pLog->_logFile, "{%d-%d-%d  %d:%d:%d}", now->tm_year + 1900, now->tm_mon + 1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec);
-
-					fprintf(pLog->_logFile, "%s", pStr);
-					fflush(pLog->_logFile);
-				}
-				printf("%s", pStr);
+				auto t = system_clock::now();
+				auto tNow = system_clock::to_time_t(t);
+				//fprintf(pLog->_logFile, "%s", ctime(&tNow));
+				std::tm* now = std::gmtime(&tNow);
+				fprintf(pLog->_logFile, "%s", "Info ");
+				fprintf(pLog->_logFile, "[%d-%d-%d %d:%d:%d]", now->tm_year + 1900, now->tm_mon + 1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec);
+				fprintf(pLog->_logFile, "%s", pStr);
+				fflush(pLog->_logFile);
+			}
+			printf("%s", pStr);
 			});
 	}
+
 	template<typename ...Args>
-	static void Info(const char* pFormat, Args...args)
+	static void Info(const char* pformat, Args ... args)
 	{
 		CellLog* pLog = &Instance();
-		pLog->_taskServer.addTask([=]()
+		pLog->_taskServer.addTask([=]() {
+			if (pLog->_logFile)
 			{
-				if (pLog->_logFile)
-				{
-					/*设置一个当前时间出来*/
-					auto t = system_clock::now();
-					auto tNow = system_clock::to_time_t(t);
-					//fprintf(pLog->_logFile, "%s", ctime(&tNow));
-					std::tm* now = std::gmtime(&tNow);
-					fprintf(pLog->_logFile, "{%d-%d-%d  %d:%d:%d}", now->tm_year + 1900, now->tm_mon + 1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec);
-
-					fprintf(pLog->_logFile, pFormat, args...);
-					fflush(pLog->_logFile);
-				}
-				printf(pFormat, args...);
+				auto t = system_clock::now();
+				auto tNow = system_clock::to_time_t(t);
+				//fprintf(pLog->_logFile, "%s", ctime(&tNow));
+				std::tm* now = std::gmtime(&tNow);
+				fprintf(pLog->_logFile, "%s", "Info ");
+				fprintf(pLog->_logFile, "[%d-%d-%d %d:%d:%d]", now->tm_year + 1900, now->tm_mon + 1, now->tm_mday, now->tm_hour, now->tm_min, now->tm_sec);
+				fprintf(pLog->_logFile, pformat, args...);
+				fflush(pLog->_logFile);
+			}
+			printf(pformat, args...);
 			});
-
 	}
 private:
 	FILE* _logFile = nullptr;
 	CellTaskServer _taskServer;
-
 };
 
-
-#endif // !_CellLog_Hpp_
+#endif // !_CELL_LOG_HPP_
