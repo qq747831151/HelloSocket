@@ -150,7 +150,7 @@ public:
 			}
 
 			//定时发送检测 现在由于发送的数据量比较大 不需要用到定时
-			//iter->second->checkSend(dt);
+			iter->second->checkSend(dt);
 
 			iter++;
 		}

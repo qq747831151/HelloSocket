@@ -48,17 +48,15 @@ public:
 			//忽略判断用户密码是否正确的过程
 			//netmsg_LogoutR ret;
 			//SendData(cSock, &ret);
-
+			pClient->resetDTHeart();
 			CellReadStream r(header);
-			//读取消息长度
-			r.ReadInt16();
-			//读取消息命令
-			r.getNetCmd();
 			auto n1 = r.ReadInt8();
 			auto n2 = r.ReadInt16();
 			auto n3 = r.ReadInt32();
 			auto n4 = r.ReadFloat();
 			auto n5 = r.ReadDouble();
+			uint32_t n = 0;
+			r.onlyread(n);
 			char name[32] = {};
 			auto n6 = r.ReadArray(name, 32);
 			char pw[32] = {};
@@ -68,19 +66,18 @@ public:
 
 			///
 
-			CellWriteStream CS;
+			CellWriteStream CS(128);
 			CS.setNetCmd(CMD_LOGINOUT_RESULT);
-			CS.WriteInt8(4);
-			CS.WriteInt16(5);
-			CS.WriteInt32(6);
-			CS.WriteFloat(7.0f);
-			CS.WriteDouble(8.0);
-			const char* str = "server";
-			CS.WriteArray(str, strlen(str));
-			const char* str1 = "hahaha";
-			CS.WriteArray(str1, strlen(str1));
-			int b[] = { 1,2,3,4,5 };
-			CS.WriteArray(b, 5);
+			CS.WriteInt8(n1);
+			CS.WriteInt16(n2);
+			CS.WriteInt32(n3);
+			CS.WriteFloat(n4);
+			CS.WriteDouble(n5);
+			CS.WriteArray(name, n6);
+			//const char* str1 = "hahaha";
+			CS.WriteArray(pw, n7);
+			//int b[] = { 1,2,3,4,5 };
+			CS.WriteArray(ata, n8);
 			CS.finsh();
 			pClient->SendData(CS.Data(), CS.length());
 		}

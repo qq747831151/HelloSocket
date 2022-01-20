@@ -19,7 +19,7 @@ public:
 		Close();
 	}
 	//≥ı ºªØsocket
-	void InitSocket()
+	void InitSocket(int sendSize=SEND_BUFF_SIZE,int recvSize=RECV_BUFF_SIZE)
 	{
 		CellNetWork::Init();
 
@@ -35,7 +35,7 @@ public:
 		}
 		else {
 			//CellLog::Info("create socket<%d> success...\n", (int)sock);
-			_pClient = new CellClient(sock);
+			_pClient = new CellClient(sock,sendSize,recvSize);
 		}
 	}
 

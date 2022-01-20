@@ -11,11 +11,20 @@ public:
 		:CellStream((char*)header,header->dataLength)
 	{
 		push(header->dataLength);
-		/*预先读取消息长度*/
-		//ReadInt16();
-		/*预先读取消息命令*/
-		//getNetCmd();
+		//	/*预先读取消息长度*/
+		ReadInt16();
+		//	/*预先读取消息命令*/
+		getNetCmd();
 	}
+	//CellReadStream(char*pData,int nSize,bool bDelete=false)
+	//	:CellStream(pData,nSize,bDelete)
+	//{
+	//	push(nSize);
+	//	/*预先读取消息长度*/
+	//	//ReadInt16();
+	//	/*预先读取消息命令*/
+	//	//getNetCmd();
+	//}
 	uint16_t getNetCmd()
 	{
 		uint16_t cmd = CMD_ERROR;
